@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
 import {
   Bold,
   Italic,
@@ -31,8 +32,6 @@ interface MessageInputProps {
   onTypingStop?: () => void;
 }
 
-const COMMON_EMOJIS = ['👍', '❤️', '🔥', '🎉', '😂', '🚀', ' Khmer', '✅', '🙏', '💯', '👏', '👀', '✨'];
-
 export const MessageInput: React.FC<MessageInputProps> = ({
   channelName,
   onSendMessage,
@@ -52,11 +51,25 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<any>(null);
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showEmojiPicker]);
 
   // Auto-resize textarea height as content changes
   useEffect(() => {
@@ -287,26 +300,20 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         </div>
       )}
 
-      {/* Emoji Picker Popover */}
+      {/* FULL UNICODE 15.0 EMOJI PICKER POPOVER */}
       {showEmojiPicker && (
-        <div className="absolute left-4 md:left-16 bottom-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3 z-50 space-y-2">
-          <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-            <span>Select Emoji</span>
-            <button onClick={() => setShowEmojiPicker(false)} className="hover:text-slate-800 dark:hover:text-slate-200">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {COMMON_EMOJIS.map((emoji) => (
-              <button
-                key={emoji}
-                onClick={() => insertEmoji(emoji)}
-                className="w-8 h-8 flex items-center justify-center text-base hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
+        <div
+          ref={emojiPickerRef}
+          className="absolute left-2 md:left-12 bottom-16 z-50 shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900"
+        >
+          <EmojiPicker
+            theme={Theme.AUTO}
+            onEmojiClick={(emojiData) => insertEmoji(emojiData.emoji)}
+            lazyLoadEmojis={true}
+            searchPlaceHolder="Search all emojis..."
+            width={window.innerWidth < 480 ? 300 : 360}
+            height={420}
+          />
         </div>
       )}
 
@@ -457,10 +464,14 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
             <button
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              title="Add Emoji"
-              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded hover:text-slate-800 dark:hover:text-slate-200"
+              title="All Internet Emojis"
+              className={`p-1 rounded transition-colors ${
+                showEmojiPicker
+                  ? 'bg-indigo-500/20 text-indigo-500'
+                  : 'hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
             >
-              <Smile className="w-4 h-4" />
+              <Smile className="w-4 h-4 text-amber-500" />
             </button>
 
             <button

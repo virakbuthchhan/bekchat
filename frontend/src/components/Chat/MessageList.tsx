@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
 import {
   MessageSquare,
   Edit2,
@@ -10,6 +11,7 @@ import {
   ExternalLink,
   Copy,
   Check,
+  SmilePlus,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useUserSettings } from '../../context/UserSettingsContext';
@@ -75,6 +77,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+  const [activeReactionPickerMessageId, setActiveReactionPickerMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const EMOJI_OPTIONS = ['👍', '❤️', '🚀', '🎉', '🔥', '👀', '💡'];
@@ -301,6 +304,23 @@ export const MessageList: React.FC<MessageListProps> = ({
                     </div>
                   )}
 
+                  {/* Full Reaction Picker Popover */}
+                  {activeReactionPickerMessageId === msg.id && (
+                    <div className="absolute z-50 shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden -top-80 right-0 bg-white dark:bg-slate-900">
+                      <EmojiPicker
+                        theme={Theme.AUTO}
+                        onEmojiClick={(emojiData) => {
+                          onToggleReaction(msg.id, emojiData.emoji);
+                          setActiveReactionPickerMessageId(null);
+                        }}
+                        lazyLoadEmojis={true}
+                        searchPlaceHolder="Search all reaction emojis..."
+                        width={300}
+                        height={320}
+                      />
+                    </div>
+                  )}
+
                   {/* Action Toolbar on Hover */}
                   <div
                     className={`absolute hidden group-hover:flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1 shadow-lg z-10 -top-4 ${
@@ -316,6 +336,13 @@ export const MessageList: React.FC<MessageListProps> = ({
                         {emoji}
                       </button>
                     ))}
+                    <button
+                      onClick={() => setActiveReactionPickerMessageId(activeReactionPickerMessageId === msg.id ? null : msg.id)}
+                      title="More reactions (All internet emojis)..."
+                      className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-500 transition-colors"
+                    >
+                      <SmilePlus className="w-3.5 h-3.5" />
+                    </button>
                     <div className="w-px h-4 bg-slate-200 dark:bg-slate-800 my-auto mx-0.5" />
                     <button
                       onClick={() => onOpenThread(msg)}
