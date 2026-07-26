@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateProfileDto, UpdateStatusDto } from './dto/update-user.dto';
+import { ChatGateway } from '../websockets/chat.gateway';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private chatGateway: ChatGateway,
+  ) {}
 
   async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -59,7 +63,7 @@ export class UsersService {
       passwordHash = await bcrypt.hash(dto.newPassword, 10);
     }
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(dto.username && { username: dto.username }),
@@ -77,10 +81,16 @@ export class UsersService {
         createdAt: true,
       },
     });
+
+    if (dto.status) {
+      this.chatGateway.emitPresenceChange(userId, dto.status);
+    }
+
+    return updatedUser;
   }
 
   async updateStatus(userId: string, dto: UpdateStatusDto) {
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { status: dto.status },
       select: {
@@ -89,6 +99,9 @@ export class UsersService {
         status: true,
       },
     });
+
+    this.chatGateway.emitPresenceChange(userId, dto.status);
+    return updated;
   }
 
   async listUsers() {

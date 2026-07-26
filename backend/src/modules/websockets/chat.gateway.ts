@@ -58,7 +58,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data: { status: 'ONLINE' },
       });
 
-      this.server.emit('presence:change', { userId, status: 'ONLINE' });
+      this.emitPresenceChange(userId, 'ONLINE');
     } catch (e) {
       client.disconnect();
     }
@@ -79,7 +79,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           data: { status: 'OFFLINE' },
         }).catch(() => {});
 
-        this.server.emit('presence:change', { userId, status: 'OFFLINE' });
+        this.emitPresenceChange(userId, 'OFFLINE');
       }
     }
   }
@@ -126,6 +126,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // Helper methods to emit real-time events from services
+  emitPresenceChange(userId: string, status: string) {
+    this.server.emit('presence:change', { userId, status });
+  }
+
   emitMessageNew(channelId: string, message: any) {
     this.server.to(`channel:${channelId}`).emit('message:new', message);
     this.server.emit('channel:activity', { channelId, lastMessage: message });

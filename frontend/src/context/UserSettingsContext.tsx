@@ -14,12 +14,32 @@ export const FONT_PRESETS = [
   { name: 'Kantumruy Pro', font: 'sans-serif' },
 ];
 
+export interface AccentColorPreset {
+  id: string;
+  name: string;
+  hex: string;
+  bgClass: string;
+  borderClass: string;
+  textClass: string;
+}
+
+export const ACCENT_COLOR_PRESETS: AccentColorPreset[] = [
+  { id: 'indigo', name: 'Indigo Crystal', hex: '#6366f1', bgClass: 'bg-indigo-600', borderClass: 'border-indigo-600', textClass: 'text-indigo-600 dark:text-indigo-400' },
+  { id: 'violet', name: 'Royal Violet', hex: '#8b5cf6', bgClass: 'bg-violet-600', borderClass: 'border-violet-600', textClass: 'text-violet-600 dark:text-violet-400' },
+  { id: 'emerald', name: 'Emerald Forest', hex: '#10b981', bgClass: 'bg-emerald-600', borderClass: 'border-emerald-600', textClass: 'text-emerald-600 dark:text-emerald-400' },
+  { id: 'rose', name: 'Rose Petal', hex: '#f43f5e', bgClass: 'bg-rose-600', borderClass: 'border-rose-600', textClass: 'text-rose-600 dark:text-rose-400' },
+  { id: 'amber', name: 'Amber Gold', hex: '#f59e0b', bgClass: 'bg-amber-600', borderClass: 'border-amber-600', textClass: 'text-amber-600 dark:text-amber-400' },
+  { id: 'cyan', name: 'Ocean Cyan', hex: '#06b6d4', bgClass: 'bg-cyan-600', borderClass: 'border-cyan-600', textClass: 'text-cyan-600 dark:text-cyan-400' },
+  { id: 'slate', name: 'Onyx Slate', hex: '#475569', bgClass: 'bg-slate-600', borderClass: 'border-slate-600', textClass: 'text-slate-600 dark:text-slate-400' },
+];
+
 export interface UserSettings {
   fontSize: FontSize;
   fontFamily: string; // Standard preset or custom Google Font name
   customFontName: string;
   isCustomFont: boolean;
   theme: ThemeMode;
+  accentColor: string; // 'indigo' | 'violet' | 'emerald' | 'rose' | 'amber' | 'cyan' | 'slate'
   timeFormat: TimeFormat;
   autoScrollOnMessage: boolean;
   reduceAnimations: boolean;
@@ -38,6 +58,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   customFontName: 'Google Sans',
   isCustomFont: false,
   theme: 'dark',
+  accentColor: 'indigo',
   timeFormat: '12-hour',
   autoScrollOnMessage: true,
   reduceAnimations: false,
@@ -76,7 +97,7 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     typeof Notification !== 'undefined' ? Notification.permission : 'default',
   );
 
-  // Apply Font Size, Google Font Loading, Theme, and Motion to root document
+  // Apply Font Size, Google Font Loading, Theme Color, and Motion to root document
   useEffect(() => {
     localStorage.setItem('bek_user_settings', JSON.stringify(settings));
 
@@ -97,7 +118,6 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     // 2. Google Font Dynamic Loading & Application
     const activeFont = settings.isCustomFont ? settings.customFontName || 'Google Sans' : settings.fontFamily;
     
-    // Inject or update Google Fonts stylesheet link in <head>
     if (activeFont) {
       const fontSlug = activeFont.trim().replace(/\s+/g, '+');
       const fontUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontSlug)}:wght@300;400;500;600;700&display=swap`;
@@ -116,7 +136,7 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     root.style.fontFamily = `"${activeFont}", sans-serif`;
 
-    // 3. Theme (Light, Dark, System)
+    // 3. Theme Mode (Light, Dark, System)
     let effectiveDark = settings.theme === 'dark';
     if (settings.theme === 'system') {
       effectiveDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -130,7 +150,10 @@ export const UserSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       root.classList.add('light');
     }
 
-    // 4. Motion
+    // 4. Accent Color Attribute
+    root.setAttribute('data-accent', settings.accentColor || 'indigo');
+
+    // 5. Motion
     if (settings.reduceAnimations) {
       root.classList.add('reduce-motion');
     } else {

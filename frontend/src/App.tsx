@@ -60,6 +60,22 @@ const MainChatApp: React.FC = () => {
     }
   }, [user, token]);
 
+  // Real-time user status / presence listener
+  useEffect(() => {
+    if (!socket) return;
+
+    const handlePresenceChange = (data: { userId: string; status: string }) => {
+      setUsers((prevUsers) =>
+        prevUsers.map((u) => (u.id === data.userId ? { ...u, status: data.status } : u)),
+      );
+    };
+
+    socket.on('presence:change', handlePresenceChange);
+    return () => {
+      socket.off('presence:change', handlePresenceChange);
+    };
+  }, [socket]);
+
   // Sync workspace and channel from URL location path
   useEffect(() => {
     if (workspaces.length === 0) return;

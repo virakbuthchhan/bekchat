@@ -17,7 +17,7 @@ import {
   Copy,
   Bell,
 } from 'lucide-react';
-import { useUserSettings, FONT_PRESETS } from '../../context/UserSettingsContext';
+import { useUserSettings, FONT_PRESETS, ACCENT_COLOR_PRESETS } from '../../context/UserSettingsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -309,9 +309,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-extrabold tracking-tight">General Appearance</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Customize theme, Google Fonts, font size, time format, and chat auto-scroll.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Customize theme mode, accent color palette, Google Fonts, font size, and time format.</p>
               </div>
 
+              {/* Theme Mode */}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Theme Mode</label>
                 <div className="grid grid-cols-3 gap-3">
@@ -331,6 +332,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
 
+              {/* Theme Accent Color */}
+              <div className="space-y-2 pt-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Theme Accent Color</label>
+                <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
+                  {ACCENT_COLOR_PRESETS.map((c) => {
+                    const isSelected = (settings.accentColor || 'indigo') === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => updateSetting('accentColor', c.id)}
+                        className={`p-2.5 rounded-2xl border text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${
+                          isSelected
+                            ? 'border-slate-900 dark:border-white shadow-lg scale-105 ring-2 ring-indigo-500/40'
+                            : 'border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 opacity-80 hover:opacity-100'
+                        }`}
+                      >
+                        <span
+                          className="w-6 h-6 rounded-full shadow-inner flex items-center justify-center text-white"
+                          style={{ backgroundColor: c.hex }}
+                        >
+                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 truncate w-full text-center">
+                          {c.name.split(' ')[0]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Font Family & Custom Google Fonts */}
               <div className="space-y-3 pt-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Font Family & Custom Google Fonts</label>
                 <div className="flex flex-wrap gap-2">
