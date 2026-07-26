@@ -1,0 +1,308 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum UserStatus {
+  ONLINE
+  AWAY
+  OFFLINE
+}
+
+enum ChannelType {
+  PUBLIC
+  PRIVATE
+  DIRECT_MESSAGE
+}
+
+enum MemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum DeliveryStatus {
+  SUCCESS
+  FAILED
+  RETRYING
+}
+
+enum NotificationType {
+  MENTION
+  DIRECT_MESSAGE
+  WORKSPACE_INVITE
+  SYSTEM
+}
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  passwordHash String
+  username     String       @unique
+  avatarUrl    String?
+  status       UserStatus   @default(OFFLINE)
+  role         UserRole     @default(MEMBER)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  workspaceMembers WorkspaceMember[]
+  channelMembers   ChannelMember[]
+  messages         Message[]
+  reactions        Reaction[]
+  apiTokens        ApiToken[]
+  ownedWorkspaces  Workspace[]            @relation("WorkspaceOwner")
+  incomingWebhooks IncomingWebhook[]
+  contributedPacks TranslationPack[]      @relation("ContributedLanguage")
+  proposals        TranslationProposal[]  @relation("ContributedProposal")
+  proposalVotes    ProposalVote[]
+  translationVotes TranslationPackVote[]
+  notifications    UserNotification[]
+}
+
+model UserNotification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(MENTION)
+  title     String
+  content   String
+  channelId String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
+
+model ApiToken {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  token      String    @unique
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  iconUrl   String?
+  ownerId   String
+  owner     User     @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members          WorkspaceMember[]
+  channels         Channel[]
+  outgoingWebhooks OutgoingWebhook[]
+}
+
+model WorkspaceMember {
+  id          String     @id @default(uuid())
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        MemberRole @default(MEMBER)
+  joinedAt    DateTime   @default(now())
+
+  @@unique([workspaceId, userId])
+}
+
+model Channel {
+  id          String      @id @default(uuid())
+  workspaceId String
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  topic       String?
+  isPrivate   Boolean     @default(false)
+  type        ChannelType @default(PUBLIC)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  members          ChannelMember[]
+  messages         Message[]
+  incomingWebhooks IncomingWebhook[]
+  outgoingWebhooks OutgoingWebhook[]
+}
+
+model ChannelMember {
+  id                String   @id @default(uuid())
+  channelId         String
+  channel           Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadMessageId String?
+  unreadCount       Int      @default(0)
+  joinedAt          DateTime @default(now())
+
+  @@unique([channelId, userId])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  channelId  String
+  channel    Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  senderId   String?
+  sender     User?    @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  content    String
+  formatting String   @default("markdown")
+  parentId   String?
+  parent     Message? @relation("MessageThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    Message[] @relation("MessageThread")
+
+  editedAt  DateTime?
+  isDeleted Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  attachments Attachment[]
+  reactions   Reaction[]
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileName  String
+  fileUrl   String
+  fileSize  Int
+  mimeType  String
+  createdAt DateTime @default(now())
+}
+
+model Reaction {
+  id        String   @id @default(uuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, emoji])
+}
+
+model IncomingWebhook {
+  id          String   @id @default(uuid())
+  channelId   String
+  channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  name        String
+  token       String   @unique
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model OutgoingWebhook {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channelId   String?
+  channel     Channel?  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  name        String
+  targetUrl   String
+  secret      String
+  events      Json
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  deliveryLogs WebhookDeliveryLog[]
+}
+
+model WebhookDeliveryLog {
+  id                String          @id @default(uuid())
+  outgoingWebhookId String
+  outgoingWebhook   OutgoingWebhook @relation(fields: [outgoingWebhookId], references: [id], onDelete: Cascade)
+  event             String
+  payload           Json
+  statusCode        Int?
+  responseBody      String?
+  attemptCount      Int             @default(1)
+  status            DeliveryStatus  @default(RETRYING)
+  createdAt         DateTime        @default(now())
+}
+
+model BotUpdate {
+  id          String   @id @default(uuid())
+  updateId    Int      @unique @default(autoincrement())
+  payload     Json
+  isProcessed Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model TranslationPack {
+  id           String                @id @default(uuid())
+  code         String                @unique
+  name         String
+  nativeName   String
+  flag         String                @default("🌐")
+  isOfficial   Boolean               @default(false)
+  isPublished  Boolean               @default(true)
+  createdById  String?
+  createdBy    User?                 @relation("ContributedLanguage", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  keys  TranslationKey[]
+  votes TranslationPackVote[]
+}
+
+model TranslationKey {
+  id                String                @id @default(uuid())
+  translationPackId String
+  translationPack   TranslationPack       @relation(fields: [translationPackId], references: [id], onDelete: Cascade)
+  key               String
+  description       String?
+  createdAt         DateTime              @default(now())
+
+  proposals         TranslationProposal[]
+
+  @@unique([translationPackId, key])
+}
+
+model TranslationProposal {
+  id               String         @id @default(uuid())
+  translationKeyId String
+  translationKey   TranslationKey @relation(fields: [translationKeyId], references: [id], onDelete: Cascade)
+  value            String
+  createdById      String
+  createdBy        User           @relation("ContributedProposal", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt        DateTime       @default(now())
+
+  votes            ProposalVote[]
+}
+
+model ProposalVote {
+  id                    String              @id @default(uuid())
+  translationProposalId String
+  translationProposal   TranslationProposal @relation(fields: [translationProposalId], references: [id], onDelete: Cascade)
+  userId                String
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vote                  Int
+  createdAt             DateTime            @default(now())
+
+  @@unique([translationProposalId, userId])
+}
+
+model TranslationPackVote {
+  id                String          @id @default(uuid())
+  translationPackId String
+  translationPack   TranslationPack @relation(fields: [translationPackId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vote              Int
+  createdAt         DateTime        @default(now())
+
+  @@unique([translationPackId, userId])
+}

@@ -1,0 +1,76 @@
+### Bek-Chat REST API & Webhooks Test File
+@baseUrl = http://localhost:3000
+
+### 1. Register User
+# @name register
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "dev@bekchat.io",
+  "username": "dev_user",
+  "password": "Password123!"
+}
+
+### 2. Login
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "dev@bekchat.io",
+  "password": "Password123!"
+}
+
+@authToken = {{login.response.body.accessToken}}
+
+### 3. Get Current User Profile
+GET {{baseUrl}}/api/users/me
+Authorization: Bearer {{authToken}}
+
+### 4. Create API / Bot Token
+POST {{baseUrl}}/api/auth/tokens
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "CI/CD Integration Key"
+}
+
+### 5. List Workspaces
+GET {{baseUrl}}/api/workspaces
+Authorization: Bearer {{authToken}}
+
+### 6. Create Incoming Webhook
+POST {{baseUrl}}/api/webhooks/incoming
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "channelId": "REPLACE_WITH_CHANNEL_ID",
+  "name": "GitHub Deployment Bot"
+}
+
+### 7. Test Incoming Slack Webhook
+POST {{baseUrl}}/api/webhooks/incoming/REPLACE_WITH_WEBHOOK_TOKEN
+Content-Type: application/json
+
+{
+  "text": "🚀 *Deployment Successful*: Version 1.0.0 is live!",
+  "username": "DeployBot",
+  "icon_url": "https://api.dicebear.com/7.x/bottts/svg?seed=DeployBot"
+}
+
+### 8. Send Message via Bot API
+POST {{baseUrl}}/api/bot/sendMessage
+X-Bot-Token: REPLACE_WITH_API_TOKEN
+Content-Type: application/json
+
+{
+  "channel_id": "REPLACE_WITH_CHANNEL_ID",
+  "text": "Hello from Bek-Chat Bot API!"
+}
+
+### 9. Get Bot Updates
+GET {{baseUrl}}/api/bot/getUpdates
+X-Bot-Token: REPLACE_WITH_API_TOKEN
