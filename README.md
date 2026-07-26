@@ -1,88 +1,110 @@
 # Bek-Chat 🚀
-> Self-hostable, real-time team chat platform with Slack-compatible incoming webhooks, HMAC signed outgoing webhooks, Telegram-style Bot API, and interactive React UI.
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
-[![NestJS](https://img.shields.io/badge/NestJS-10.3-red.svg)](https://nestjs.com/)
-[![React](https://img.shields.io/badge/React-18.2-cyan.svg)](https://reactjs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7-danger.svg)](https://redis.io/)
-[![Docker Compose](https://img.shields.io/badge/Docker_Compose-Supported-success.svg)](https://docs.docker.com/compose/)
+> **Bek-Chat** is a high-performance, self-hostable, real-time team collaboration and messaging platform built with **React**, **NestJS**, **TypeScript**, **Prisma ORM**, **PostgreSQL**, **Redis**, and **WebSockets**.
+
+Designed with modern Slack-style aesthetics, vibrant glassmorphic UI elements, dynamic Google Fonts CDN loading, incoming/outgoing webhooks, Telegram-style bot APIs, crowdsourced multi-language translations, and an interactive in-app notification center.
 
 ---
 
-## 📐 System Architecture
+## 🌟 Key Features
 
-```mermaid
-graph TD
-    Client[Web Browser / Mobile React App] -->|HTTP / REST| Nginx[Nginx Reverse Proxy :80]
-    Client -->|WebSockets (Socket.IO)| Nginx
-    
-    Nginx -->|Static Frontend| Dist[React + Vite App]
-    Nginx -->|/api & /socket.io| Backend[NestJS Backend API :3000]
-    
-    Backend -->|Pub/Sub & Session| Redis[(Redis :6379)]
-    Backend -->|Primary Data| Postgres[(PostgreSQL 16 :5432)]
-    
-    ExtService[External Service / CI-CD] -->|Incoming Webhook (Slack JSON)| Backend
-    Backend -->|Outgoing Webhook (HMAC Signature)| WebhookReceiver[External Listener]
-    BotAgent[Bot Client] -->|Telegram Bot API /sendMessage| Backend
-```
+### 💬 Real-Time Chat & Slack-Style Formatting
+- **WebSocket & Redis Pub/Sub Engine**: Zero-latency channel messaging, direct messages, and typing indicators across distributed containers.
+- **Rich Text Toolbar**: Bold, italic, underline, strikethrough, links, bullet/numbered lists, blockquotes, inline code, and code blocks.
+- **Dynamic Auto-Expanding Input**: Message box smoothly auto-resizes as line height increases.
+- **Syntax Highlighted Code Snippets**: Code block cards with language badges (`JS`, `PYTHON`, `JSON`, `HTML`) and 1-click **"Copy Code"** button.
+- **User `@username` Mentions**: Autocomplete user dropdown while typing `@` and real-time mention alerts.
+
+### 🔔 In-App Notification Center & Alerts
+- **Navbar Bell Button & Badge**: Unread notification counter badge in the chat header.
+- **Interactive Notification Drawer**: View unread mentions, direct message alerts, and system updates with quick **"Read All"** actions.
+- **Browser Desktop Notifications & Sound Chimes**: Web push notifications and audio alert chimes with volume control.
+
+### 🎨 Custom Google Fonts & Aesthetic Design System
+- **Dynamic Google Fonts CDN Injector**: Load and apply any font family directly from [Google Fonts](https://fonts.google.com/) (e.g. `Google Sans`, `Poppins`, `Inter`, `Roboto`, `Kantumruy Pro`, `Battambang`).
+- **Curated Theme Modes**: Dark Mode, Light Mode, and System Default theme support.
+
+### 👥 Workspace & Member Management
+- **Workspace Administration**: Customize workspace name and icon URL.
+- **Member Invites & Role Management**: Invite team members by username or email and assign roles (`Admin` / `Member`).
+
+### 👤 User Profile & Account Settings
+- **Live Avatar Customizer**: Choose custom image URLs or generate avatars with 1-click DiceBear presets (`BekUser`, `Alex`, `Sarah`, `DevMaster`, `KhmerCoder`).
+- **Presence Status Selector**: Switch between 🟢 **Online**, 🟡 **Away**, and ⚪ **Offline**.
+- **Password Manager**: Update account passwords with current & new password verification.
+
+### 🌐 Crowdsourced Multi-Language Hub (i18n)
+- **Native English & Khmer Support**: Built-in translation packs.
+- **Key-Level Proposal & Voting System**: Allow community users to submit translation phrase proposals for any key and upvote winning translations in real time.
+
+### 🤖 Webhooks & Bot API Ecosystem
+- **Slack-Compatible Incoming Webhooks**: Post rich notifications to channels via HTTP POST (`/api/webhooks/incoming/:token`).
+- **Outgoing Event Webhooks**: Subscribe to workspace events (`message.created`, `*`) with HMAC-SHA256 signature verification (`X-Signature`), delivery logs, and test pings.
+- **Telegram-Style Bot API**: Send messages, handle updates via long-polling or webhooks, and generate API tokens.
 
 ---
 
-## ✨ Features Checklist
+## 🛠️ Technology Stack
 
-- [x] **Real-Time Team Communication**: Public & private channels, 1:1 Direct Messages, thread replies, and markdown text formatting.
-- [x] **Socket.IO + Redis Pub/Sub**: Real-time event broadcasting, horizontal scaling support across multiple nodes, typing indicators, and presence status (`ONLINE`, `AWAY`, `OFFLINE`).
-- [x] **Slack-Compatible Incoming Webhooks**: Generate channel webhook tokens (`POST /api/webhooks/incoming/:token`) accepting standard Slack JSON (`text`, `username`, `icon_url`, `attachments`). Rate-limited per token.
-- [x] **HMAC-SHA256 Outgoing Webhooks**: Dispatch workspace events (`message.created`, `user.joined`, `reaction.added`, etc.) to external URLs with `X-Signature` HMAC headers, exponential backoff retries, and UI delivery status logs.
-- [x] **Telegram-Style Bot API**: `POST /api/bot/sendMessage` & `GET /api/bot/getUpdates` with bot token authentication.
-- [x] **Interactive OpenAPI 3.0 Documentation**: Live Swagger UI served at `/api/docs`.
-- [x] **Modern 3-Pane Web UI**: Sleek Slack-like UI with dark/light mode toggle, message search, reaction picker, attachment viewer, and settings modal.
-- [x] **Single Command Deployment**: `docker-compose up --build` with automatic PostgreSQL migrations and healthchecks for all containers.
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | React 18, Vite, TypeScript, TailwindCSS, Lucide Icons, React Router v6 |
+| **Backend** | NestJS, TypeScript, Prisma ORM, Socket.IO, Class Validator, Passport JWT |
+| **Databases** | PostgreSQL 16 (Relational DB), Redis 7 (Pub/Sub & Caching) |
+| **Documentation** | OpenAPI 3.0 (Swagger UI at `/api/docs`) |
+| **Containerization** | Docker & Docker Compose |
 
 ---
 
-## ⚡ Quickstart (Single Command)
+## 🚀 Quick Start with Docker Compose
 
-To bring up the entire stack (PostgreSQL, Redis, NestJS Backend, React Frontend & Nginx):
+Deploy the entire stack (PostgreSQL, Redis, NestJS Backend, and React Frontend) with a single command:
 
 ```bash
-# 1. Clone repo & navigate into directory
-git clone https://github.com/bek-chat/bek-chat.git
-cd bek-chat
+# 1. Clone repository
+git clone git@github.com-virakbuthchhan:virakbuthchhan/bekchat.git
+cd bekchat
 
-# 2. Start all services using Docker Compose
-docker-compose up --build
+# 2. Launch production stack in Docker
+docker-compose up -d --build
 ```
 
 Access the application in your browser:
-- 💬 **Web Client**: [http://localhost:80](http://localhost:80)
-- 📖 **Swagger OpenAPI Docs**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
-- ⚙️ **Backend Direct Port**: [http://localhost:3000](http://localhost:3000)
+- **Web App UI**: [http://localhost](http://localhost)
+- **Swagger REST API Docs**: [http://localhost/api/docs](http://localhost/api/docs)
 
 ---
 
-## 🧪 Local Manual Testing
+## 💻 Local Development Setup
 
-### Demo Login
-You can click **"Quick Demo Login"** on the sign-in modal, or register a new user. The first registered user automatically becomes a workspace **OWNER/ADMIN**.
+### Backend
 
-### Test Incoming Webhook via `curl`
 ```bash
-curl -X POST http://localhost:3000/api/webhooks/incoming/<YOUR_WEBHOOK_TOKEN> \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "🚀 *Deployment Succeeded*: Version `v1.0.0` is now live!",
-    "username": "DeployBot",
-    "icon_url": "https://api.dicebear.com/7.x/bottts/svg?seed=DeployBot"
-  }'
+cd backend
+npm install
+npx prisma db push
+npm run start:dev
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
 
-## 📚 Detailed Documentation References
+## 📜 API Documentation
 
-- 📖 **REST & WebSocket API Spec**: [docs/API.md](file:///Users/vireakbuth/Documents/Develop/bek-chat/docs/API.md)
-- 📥 **Webhooks & Bot API Guide**: [docs/WEBHOOKS.md](file:///Users/vireakbuth/Documents/Develop/bek-chat/docs/WEBHOOKS.md)
-- 🧪 **REST Client HTTP File**: [bek-chat.http](file:///Users/vireakbuth/Documents/Develop/bek-chat/bek-chat.http)
+Bek-Chat serves an interactive **OpenAPI 3.0 Swagger UI** generated automatically from NestJS controllers.
+
+To explore endpoints, test requests, or inspect request/response schemas:
+👉 Visit **`http://localhost/api/docs`**
+
+---
+
+## 📄 License
+
+Licensed under the [MIT License](LICENSE).
