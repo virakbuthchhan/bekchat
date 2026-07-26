@@ -15,6 +15,7 @@ import {
   User,
   Radio,
   Copy,
+  Bell,
 } from 'lucide-react';
 import { useUserSettings, FONT_PRESETS } from '../../context/UserSettingsContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -34,7 +35,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenProfile,
 }) => {
   const { user } = useAuth();
-  const { settings, updateSetting } = useUserSettings();
+  const { settings, updateSetting, playNotificationSound, requestNotificationPermission, notificationPermission } = useUserSettings();
   const {
     currentPack,
     availablePacks,
@@ -184,6 +185,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setNewOutWhUrl('');
       fetchWebhooks();
     } catch (e) {}
+  };
+
+  const handleTestOutgoingWebhook = async (id: string) => {
+    try {
+      const res = await axios.post(`/api/webhooks/outgoing/${id}/test`);
+      alert(`Test webhook response (Status ${res.data.statusCode}): ${JSON.stringify(res.data.response || res.data)}`);
+      fetchWebhooks();
+    } catch (err: any) {
+      alert(`Test webhook failed: ${err.message}`);
+    }
   };
 
   const copyToClipboard = (text: string, id: string) => {
@@ -359,6 +370,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       Apply Google Font
                     </button>
                   </div>
+                  {settings.isCustomFont && (
+                    <p className="text-[11px] text-emerald-500 font-medium flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Active Custom Google Font: "{settings.customFontName}"
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Font Size</label>
+                  <select
+                    value={settings.fontSize}
+                    onChange={(e) => updateSetting('fontSize', e.target.value as any)}
+                    className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-medium"
+                  >
+                    <option value="small">Small (12px)</option>
+                    <option value="medium">Medium (14px - Default)</option>
+                    <option value="large">Large (16px)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Time Format</label>
+                  <select
+                    value={settings.timeFormat}
+                    onChange={(e) => updateSetting('timeFormat', e.target.value as any)}
+                    className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-medium"
+                  >
+                    <option value="12-hour">12-hour (02:30 PM)</option>
+                    <option value="24-hour">24-hour (14:30)</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -372,6 +415,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <p className="text-xs text-slate-500 dark:text-slate-400">Edit workspace name, icon URL, invite new members, and assign roles.</p>
               </div>
 
+              {wsSuccessMsg && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs">
+                  {wsSuccessMsg}
+                </div>
+              )}
+              {wsErrMsg && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-xl text-xs">
+                  {wsErrMsg}
+                </div>
+              )}
+
+              {/* Edit Workspace Form */}
               <form onSubmit={handleUpdateWorkspace} className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-500">Workspace Details</h4>
                 <div className="grid grid-cols-2 gap-3">
@@ -400,6 +455,80 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   Save Workspace Info
                 </button>
               </form>
+
+              {/* Invite Member Form */}
+              <form onSubmit={handleInviteMember} className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1.5">
+                  <UserPlus className="w-4 h-4" /> Invite New Member
+                </h4>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter email or username (e.g. alex_dev)"
+                    value={inviteEmailOrUser}
+                    onChange={(e) => setInviteEmailOrUser(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs"
+                  />
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as any)}
+                    className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold"
+                  >
+                    <option value="MEMBER">Member</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                  <button type="submit" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs shadow">
+                    Invite Member
+                  </button>
+                </div>
+              </form>
+
+              {/* Workspace Member List */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Workspace Members ({wsMembers.length})</h4>
+                <div className="border border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-200 dark:divide-slate-800 max-h-48 overflow-y-auto">
+                  {wsMembers.length === 0 ? (
+                    <p className="p-3 text-xs text-slate-400 italic">No workspace members loaded.</p>
+                  ) : (
+                    wsMembers.map((m) => (
+                      <div key={m.id} className="p-3 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={m.user?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${m.user?.username}`}
+                            alt={m.user?.username}
+                            className="w-7 h-7 rounded-full object-cover"
+                          />
+                          <div>
+                            <p className="font-bold text-slate-900 dark:text-slate-100">@{m.user?.username}</p>
+                            <span className="text-[10px] text-slate-400">{m.user?.email}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={m.role}
+                            onChange={(e) => handleUpdateMemberRole(m.id, e.target.value as any)}
+                            className="px-2 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-[11px] font-semibold"
+                          >
+                            <option value="MEMBER">Member</option>
+                            <option value="ADMIN">Admin</option>
+                          </select>
+                          {m.userId !== user?.id && (
+                            <button
+                              onClick={() => handleRemoveMember(m.id)}
+                              title="Remove member"
+                              className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -409,6 +538,286 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div>
                 <h3 className="text-lg font-extrabold tracking-tight">API & Webhook Integrations</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Slack-compatible incoming webhooks & outgoing event webhooks.</p>
+              </div>
+
+              {/* Incoming Webhooks Section */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1.5">
+                  <Webhook className="w-4 h-4" /> Incoming Webhooks (Post to Channel)
+                </h4>
+
+                <form onSubmit={handleCreateIncomingWebhook} className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">Webhook Bot Name</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="GitHub Deployment Bot"
+                        value={newWhName}
+                        onChange={(e) => setNewWhName(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">Target Channel</label>
+                      <select
+                        value={newWhChannelId}
+                        onChange={(e) => setNewWhChannelId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold"
+                      >
+                        {channels.map((c) => (
+                          <option key={c.id} value={c.id}>#{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <button type="submit" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs shadow">
+                    Create Incoming Webhook
+                  </button>
+                </form>
+
+                <div className="border border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-200 dark:divide-slate-800">
+                  {incomingWebhooks.length === 0 ? (
+                    <p className="p-3 text-xs text-slate-400 italic">No incoming webhooks created yet.</p>
+                  ) : (
+                    incomingWebhooks.map((wh) => {
+                      const fullUrl = `${window.location.origin}/api/webhooks/incoming/${wh.token}`;
+                      return (
+                        <div key={wh.id} className="p-3 space-y-1.5 text-xs">
+                          <div className="flex items-center justify-between font-bold">
+                            <span>{wh.name} → #{wh.channel?.name}</span>
+                            <button
+                              onClick={() => copyToClipboard(fullUrl, wh.id)}
+                              className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-mono text-[11px]"
+                            >
+                              <Copy className="w-3 h-3" />
+                              {copiedId === wh.id ? 'Copied!' : 'Copy Webhook URL'}
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            readOnly
+                            value={fullUrl}
+                            className="w-full px-2.5 py-1.5 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[11px] font-mono text-slate-600 dark:text-slate-400"
+                          />
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Outgoing Webhooks Section */}
+              <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1.5">
+                  <Radio className="w-4 h-4" /> Outgoing Webhooks (Event Dispatcher)
+                </h4>
+
+                <form onSubmit={handleCreateOutgoingWebhook} className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">Integration Name</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Production Event Relay"
+                        value={newOutWhName}
+                        onChange={(e) => setNewOutWhName(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">Target Endpoint URL</label>
+                      <input
+                        type="url"
+                        required
+                        placeholder="https://api.yourserver.com/webhooks"
+                        value={newOutWhUrl}
+                        onChange={(e) => setNewOutWhUrl(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs"
+                      />
+                    </div>
+                  </div>
+                  <button type="submit" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs shadow">
+                    Add Outgoing Webhook
+                  </button>
+                </form>
+
+                <div className="border border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-200 dark:divide-slate-800">
+                  {outgoingWebhooks.length === 0 ? (
+                    <p className="p-3 text-xs text-slate-400 italic">No outgoing webhooks created yet.</p>
+                  ) : (
+                    outgoingWebhooks.map((wh) => (
+                      <div key={wh.id} className="p-3 space-y-2 text-xs">
+                        <div className="flex items-center justify-between font-bold">
+                          <span>{wh.name} ({wh.targetUrl})</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleTestOutgoingWebhook(wh.id)}
+                              className="px-2.5 py-1 bg-indigo-500/10 text-indigo-500 rounded-md font-semibold hover:bg-indigo-500/20"
+                            >
+                              Test Ping
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: Notifications & Sound */}
+          {activeTab === 'notifications' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-extrabold tracking-tight">Notifications & Sound</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Configure web push alerts, desktop notifications, and audio volume.</p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                  <div>
+                    <h4 className="text-xs font-bold">Sound Notification Volume</h4>
+                    <p className="text-[11px] text-slate-500">Adjust audio volume level for incoming chat alerts.</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={settings.soundVolume}
+                      onChange={(e) => updateSetting('soundVolume', parseFloat(e.target.value))}
+                      className="w-32 accent-indigo-600"
+                    />
+                    <button
+                      onClick={playNotificationSound}
+                      className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg shadow"
+                    >
+                      Test Sound
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                  <div>
+                    <h4 className="text-xs font-bold">Direct Message Notifications</h4>
+                    <p className="text-[11px] text-slate-500">Pop up desktop alert when receiving private DMs.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.notifyPrivateChat}
+                    onChange={(e) => updateSetting('notifyPrivateChat', e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 rounded"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                  <div>
+                    <h4 className="text-xs font-bold">Browser Desktop Notification Permissions</h4>
+                    <p className="text-[11px] text-slate-500">Current browser permission state: <span className="font-bold uppercase text-indigo-500">{notificationPermission}</span></p>
+                  </div>
+                  <button
+                    onClick={requestNotificationPermission}
+                    className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-semibold transition-colors"
+                  >
+                    Request Permission
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: Language Translate Hub */}
+          {activeTab === 'languages' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-extrabold tracking-tight">Crowdsourced Language Translate Hub</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Contribute translation phrases for your language and vote on proposals.</p>
+              </div>
+
+              <div className="flex items-center gap-3 p-4 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-2xl">
+                <Globe className="w-5 h-5 text-indigo-500" />
+                <div className="flex-1">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Active Display Language:</span>
+                  <div className="flex gap-2 mt-1">
+                    {availablePacks.map((pack) => (
+                      <button
+                        key={pack.code}
+                        onClick={() => changeLanguage(pack.code)}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                          currentPack?.code === pack.code
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span>{pack.flag}</span>
+                        <span>{pack.nativeName}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Proposals List */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Key Translation Proposals for {currentPack?.nativeName || 'English'}</h4>
+                <div className="border border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-200 dark:divide-slate-800 max-h-64 overflow-y-auto">
+                  {translationKeys.length === 0 ? (
+                    <p className="p-3 text-xs text-slate-400 italic">No translation keys found.</p>
+                  ) : (
+                    translationKeys.map((item) => (
+                      <div key={item.id} className="p-3 space-y-2 text-xs">
+                        <div className="flex items-center justify-between font-bold">
+                          <span className="font-mono text-indigo-500">{item.key}</span>
+                          <span className="text-slate-400 font-normal">{item.description}</span>
+                        </div>
+
+                        {/* Proposals */}
+                        <div className="space-y-1 pl-2 border-l-2 border-slate-200 dark:border-slate-800">
+                          {item.proposals?.map((prop: any) => (
+                            <div key={prop.id} className="flex items-center justify-between text-[11px]">
+                              <span>"{prop.value}" (by @{prop.createdBy?.username || 'User'})</span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => voteProposal(prop.id, 1)}
+                                  className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-md font-bold hover:bg-emerald-500/20"
+                                >
+                                  ▲ {prop.voteCount || 0}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Submit Proposal */}
+                        <div className="flex gap-2 pt-1">
+                          <input
+                            type="text"
+                            placeholder="Suggest new translation..."
+                            value={proposalInputs[item.id] || ''}
+                            onChange={(e) => setProposalInputs({ ...proposalInputs, [item.id]: e.target.value })}
+                            className="flex-1 px-3 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                          />
+                          <button
+                            onClick={() => {
+                              if (proposalInputs[item.id]?.trim()) {
+                                submitProposal(item.id, proposalInputs[item.id].trim());
+                                setProposalInputs({ ...proposalInputs, [item.id]: '' });
+                              }
+                            }}
+                            className="px-3 py-1 bg-indigo-600 text-white rounded-lg font-semibold text-xs hover:bg-indigo-500"
+                          >
+                            Submit
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           )}
