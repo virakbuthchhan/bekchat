@@ -46,6 +46,9 @@ const MainChatApp: React.FC = () => {
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
 
+  // Mobile Drawer State
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+
   // Form states
   const [newChannelName, setNewChannelName] = useState('');
   const [newChannelTopic, setNewChannelTopic] = useState('');
@@ -59,6 +62,28 @@ const MainChatApp: React.FC = () => {
       fetchUsers();
     }
   }, [user, token]);
+
+  // Global Keyboard Shortcuts (Cmd+K search, Cmd+/ settings, Cmd+P profile)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey;
+      if (!isMod) return;
+
+      if (e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowSearch((prev) => !prev);
+      } else if (e.key === '/') {
+        e.preventDefault();
+        setShowSettings((prev) => !prev);
+      } else if (e.key.toLowerCase() === 'p' && !e.shiftKey) {
+        e.preventDefault();
+        setShowProfile((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   // Real-time user status / presence listener
   useEffect(() => {
@@ -386,25 +411,77 @@ const MainChatApp: React.FC = () => {
 
   return (
     <div className="h-screen flex w-full overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-      {/* Pane 1: Workspaces bar + Channel sidebar */}
-      <WorkspaceBar
-        workspaces={workspaces}
-        activeWorkspaceId={activeWorkspaceId}
-        onSelectWorkspace={handleSelectWorkspace}
-        onCreateWorkspace={() => setShowCreateWorkspace(true)}
-      />
+      {/* Desktop Navigation Sidebar */}
+      <div className="hidden md:flex flex-shrink-0">
+        <WorkspaceBar
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          onSelectWorkspace={handleSelectWorkspace}
+          onCreateWorkspace={() => setShowCreateWorkspace(true)}
+        />
 
-      <ChannelList
-        workspaceName={activeWorkspace?.name || 'Bek-Chat'}
-        channels={channels}
-        users={users}
-        activeChannelId={activeChannel?.id || null}
-        onSelectChannel={handleSelectChannel}
-        onCreateChannel={() => setShowCreateChannel(true)}
-        onStartDm={handleStartDm}
-        onOpenSettings={() => setShowSettings(true)}
-        onOpenProfile={() => setShowProfile(true)}
-      />
+        <ChannelList
+          workspaceName={activeWorkspace?.name || 'Bek-Chat'}
+          channels={channels}
+          users={users}
+          activeChannelId={activeChannel?.id || null}
+          onSelectChannel={handleSelectChannel}
+          onCreateChannel={() => setShowCreateChannel(true)}
+          onStartDm={handleStartDm}
+          onOpenSettings={() => setShowSettings(true)}
+          onOpenProfile={() => setShowProfile(true)}
+        />
+      </div>
+
+      {/* Mobile Navigation Drawer */}
+      {showMobileSidebar && (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          <div
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm"
+            onClick={() => setShowMobileSidebar(false)}
+          />
+          <div className="relative z-10 flex h-full shadow-2xl">
+            <WorkspaceBar
+              workspaces={workspaces}
+              activeWorkspaceId={activeWorkspaceId}
+              onSelectWorkspace={(id) => {
+                handleSelectWorkspace(id);
+                setShowMobileSidebar(false);
+              }}
+              onCreateWorkspace={() => {
+                setShowCreateWorkspace(true);
+                setShowMobileSidebar(false);
+              }}
+            />
+            <ChannelList
+              workspaceName={activeWorkspace?.name || 'Bek-Chat'}
+              channels={channels}
+              users={users}
+              activeChannelId={activeChannel?.id || null}
+              onSelectChannel={(ch) => {
+                handleSelectChannel(ch);
+                setShowMobileSidebar(false);
+              }}
+              onCreateChannel={() => {
+                setShowCreateChannel(true);
+                setShowMobileSidebar(false);
+              }}
+              onStartDm={(uid) => {
+                handleStartDm(uid);
+                setShowMobileSidebar(false);
+              }}
+              onOpenSettings={() => {
+                setShowSettings(true);
+                setShowMobileSidebar(false);
+              }}
+              onOpenProfile={() => {
+                setShowProfile(true);
+                setShowMobileSidebar(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Pane 2: Central Chat Area */}
       <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 min-w-0">
@@ -421,6 +498,7 @@ const MainChatApp: React.FC = () => {
               memberCount={activeChannel.members?.length || 1}
               onOpenSearch={() => setShowSearch(true)}
               onToggleThreadView={() => {}}
+              onToggleMobileSidebar={() => setShowMobileSidebar(true)}
             />
 
             <MessageList
@@ -476,7 +554,11 @@ const MainChatApp: React.FC = () => {
 
       {/* Search Modal */}
       {showSearch && activeWorkspaceId && (
-        <SearchModal workspaceId={activeWorkspaceId} onClose={() => setShowSearch(false)} />
+        <SearchModal
+          workspaceId={activeWorkspaceId}
+          onClose={() => setShowSearch(false)}
+          onSelectChannel={handleSelectChannel}
+        />
       )}
 
       {/* Create Channel Modal */}

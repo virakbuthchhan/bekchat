@@ -159,6 +159,38 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const isMod = e.metaKey || e.ctrlKey;
+
+    // Keyboard Shortcuts inside Textarea (Cmd+B, Cmd+I, Cmd+U, Cmd+Shift+X, Cmd+Shift+C)
+    if (isMod) {
+      const key = e.key.toLowerCase();
+      if (key === 'b') {
+        e.preventDefault();
+        applyFormat('**', '**', 'bold text');
+        return;
+      }
+      if (key === 'i') {
+        e.preventDefault();
+        applyFormat('*', '*', 'italic text');
+        return;
+      }
+      if (key === 'u') {
+        e.preventDefault();
+        applyFormat('<u>', '</u>', 'underlined text');
+        return;
+      }
+      if (e.shiftKey && key === 'x') {
+        e.preventDefault();
+        applyFormat('~~', '~~', 'strikethrough text');
+        return;
+      }
+      if (e.shiftKey && key === 'c') {
+        e.preventDefault();
+        applyFormat('```\n', '\n```', 'code block');
+        return;
+      }
+    }
+
     if (showMentionMenu && filteredUsers.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -216,7 +248,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 relative select-none">
+    <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 relative select-none">
       {/* Hidden File Input */}
       <input
         type="file"
@@ -257,7 +289,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
       {/* Emoji Picker Popover */}
       {showEmojiPicker && (
-        <div className="absolute left-16 bottom-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3 z-50 space-y-2">
+        <div className="absolute left-4 md:left-16 bottom-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3 z-50 space-y-2">
           <div className="flex justify-between items-center text-xs font-bold text-slate-500">
             <span>Select Emoji</span>
             <button onClick={() => setShowEmojiPicker(false)} className="hover:text-slate-800 dark:hover:text-slate-200">
@@ -303,37 +335,37 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-2xl shadow-md overflow-hidden focus-within:border-indigo-500 dark:focus-within:border-indigo-500 transition-all">
         {/* TOP TOOLBAR: Formatting Controls (Slack Style) */}
         {showFormatting && (
-          <div className="px-3 py-1.5 border-b border-slate-200 dark:border-slate-800 flex items-center gap-0.5 text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-950/40">
+          <div className="px-3 py-1.5 border-b border-slate-200 dark:border-slate-800 flex items-center gap-0.5 text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-950/40 overflow-x-auto">
             <button
               onClick={() => applyFormat('**', '**', 'bold text')}
-              title="Bold"
+              title="Bold (⌘B)"
               className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-300"
             >
               <Bold className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => applyFormat('*', '*', 'italic text')}
-              title="Italic"
+              title="Italic (⌘I)"
               className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-300"
             >
               <Italic className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => applyFormat('<u>', '</u>', 'underlined text')}
-              title="Underline"
+              title="Underline (⌘U)"
               className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-300"
             >
               <Underline className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => applyFormat('~~', '~~', 'strikethrough text')}
-              title="Strikethrough"
+              title="Strikethrough (⌘⇧X)"
               className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-300"
             >
               <Strikethrough className="w-3.5 h-3.5" />
             </button>
 
-            <span className="w-[1px] h-4 bg-slate-300 dark:bg-slate-800 mx-1" />
+            <span className="w-[1px] h-4 bg-slate-300 dark:bg-slate-800 mx-1 flex-shrink-0" />
 
             <button
               onClick={applyLinkFormat}
@@ -367,7 +399,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               <Quote className="w-3.5 h-3.5" />
             </button>
 
-            <span className="w-[1px] h-4 bg-slate-300 dark:bg-slate-800 mx-1" />
+            <span className="w-[1px] h-4 bg-slate-300 dark:bg-slate-800 mx-1 flex-shrink-0" />
 
             <button
               onClick={() => applyFormat('`', '`', 'code')}
@@ -379,7 +411,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
             <button
               onClick={() => applyFormat('```\n', '\n```', 'code block')}
-              title="Code Block"
+              title="Code Block (⌘⇧C)"
               className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-300"
             >
               <SquareCode className="w-3.5 h-3.5" />
@@ -402,7 +434,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
         {/* BOTTOM ACTION BAR (Slack Style) */}
         <div className="px-3 py-1.5 bg-slate-50/50 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
-          <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-0.5 md:gap-1 text-slate-500 dark:text-slate-400">
             <button
               onClick={() => fileInputRef.current?.click()}
               title="Attach File"
@@ -442,23 +474,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               <AtSign className="w-4 h-4" />
             </button>
 
-            <span className="w-[1px] h-4 bg-slate-300 dark:bg-slate-800 mx-1" />
-
-            <button
-              onClick={() => alert('Video record feature shortcut!')}
-              title="Video Note"
-              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded hover:text-slate-800 dark:hover:text-slate-200"
-            >
-              <Video className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => alert('Voice note feature shortcut!')}
-              title="Voice Note"
-              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded hover:text-slate-800 dark:hover:text-slate-200"
-            >
-              <Mic className="w-4 h-4" />
-            </button>
+            <span className="w-[1px] h-4 bg-slate-300 dark:bg-slate-800 mx-0.5 flex-shrink-0" />
 
             <button
               onClick={() => applyFormat('```\n', '\n```', '// snippet')}

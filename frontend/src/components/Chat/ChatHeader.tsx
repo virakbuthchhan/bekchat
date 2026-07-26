@@ -10,6 +10,7 @@ import {
   Sparkles,
   MessageSquare,
   X,
+  Menu,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
@@ -21,6 +22,7 @@ interface ChatHeaderProps {
   memberCount: number;
   onOpenSearch: () => void;
   onToggleThreadView?: () => void;
+  onToggleMobileSidebar?: () => void;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -29,6 +31,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   topic,
   memberCount,
   onOpenSearch,
+  onToggleMobileSidebar,
 }) => {
   const { user } = useAuth();
   const { socket } = useSocket();
@@ -75,7 +78,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   return (
     <div className="h-14 px-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between z-20 select-none relative">
       {/* Left Channel Details */}
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 md:gap-3 min-w-0">
+        {onToggleMobileSidebar && (
+          <button
+            onClick={onToggleMobileSidebar}
+            title="Toggle Sidebar Menu"
+            className="md:hidden p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex-shrink-0"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+
         <div className="flex items-center gap-1.5 font-bold text-base text-slate-800 dark:text-slate-100 truncate">
           {isPrivate ? (
             <Lock className="w-4 h-4 text-amber-500 flex-shrink-0" />
@@ -86,7 +99,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
 
         {topic && (
-          <div className="hidden md:flex items-center gap-2 border-l border-slate-200 dark:border-slate-800 pl-3">
+          <div className="hidden lg:flex items-center gap-2 border-l border-slate-200 dark:border-slate-800 pl-3">
             <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-sm">
               {topic}
             </span>
@@ -96,17 +109,20 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
       {/* Right Actions */}
       <div className="flex items-center gap-2">
-        {/* Search button */}
+        {/* Search button with Cmd+K badge */}
         <button
           onClick={onOpenSearch}
           className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-medium transition-colors border border-slate-200 dark:border-slate-700"
         >
-          <Search className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Search messages...</span>
+          <Search className="w-3.5 h-3.5 text-indigo-500" />
+          <span className="hidden sm:inline">Search...</span>
+          <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 text-[10px] font-mono rounded font-semibold border border-slate-300 dark:border-slate-600">
+            ⌘K
+          </kbd>
         </button>
 
         {/* Member count pill */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-medium">
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-medium">
           <Users className="w-3.5 h-3.5" />
           <span>{memberCount}</span>
         </div>
