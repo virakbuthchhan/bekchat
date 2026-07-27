@@ -204,6 +204,9 @@ const MainChatApp: React.FC = () => {
 
                 notif.onclick = () => {
                   window.focus();
+                  if (newMsg.channelId) {
+                    handleSelectChannelById(newMsg.channelId);
+                  }
                 };
               } catch (err) {}
             }
@@ -297,6 +300,13 @@ const MainChatApp: React.FC = () => {
     }
 
     navigate(`/w/${activeWs.slug}/c/${ch.name}`);
+  };
+
+  const handleSelectChannelById = (channelId: string) => {
+    const targetChan = channels.find((c) => c.id === channelId);
+    if (targetChan) {
+      handleSelectChannel(targetChan);
+    }
   };
 
   const handleStartDm = async (targetUserId: string) => {
@@ -503,6 +513,7 @@ const MainChatApp: React.FC = () => {
               onOpenSearch={() => setShowSearch(true)}
               onToggleThreadView={() => {}}
               onToggleMobileSidebar={() => setShowMobileSidebar(true)}
+              onSelectChannelById={handleSelectChannelById}
             />
 
             <MessageList

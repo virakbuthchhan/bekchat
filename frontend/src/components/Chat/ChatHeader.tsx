@@ -11,6 +11,7 @@ import {
   MessageSquare,
   X,
   Menu,
+  ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
@@ -23,6 +24,7 @@ interface ChatHeaderProps {
   onOpenSearch: () => void;
   onToggleThreadView?: () => void;
   onToggleMobileSidebar?: () => void;
+  onSelectChannelById?: (channelId: string) => void;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -32,12 +34,30 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   memberCount,
   onOpenSearch,
   onToggleMobileSidebar,
+  onSelectChannelById,
 }) => {
   const { user } = useAuth();
   const { socket } = useSocket();
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
+
+  const handleNotificationClick = async (n: any) => {
+    if (!n.isRead) {
+      try {
+        await axios.post(`/api/notifications/${n.id}/read`);
+      } catch (e) {}
+      setNotifications((prev) =>
+        prev.map((item) => (item.id === n.id ? { ...item, isRead: true } : item)),
+      );
+    }
+
+    if (n.channelId && onSelectChannelById) {
+      onSelectChannelById(n.channelId);
+    }
+
+    setShowNotificationDrawer(false);
+  };
 
   useEffect(() => {
     if (user) {
@@ -177,20 +197,24 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   notifications.map((n) => (
                     <div
                       key={n.id}
-                      className={`p-3 rounded-xl border transition-all text-xs space-y-1 ${
+                      onClick={() => handleNotificationClick(n)}
+                      className={`p-3 rounded-xl border transition-all text-xs space-y-1 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md hover:scale-[1.01] active:scale-98 ${
                         n.isRead
                           ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
                           : 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-500/40 text-slate-900 dark:text-slate-100 font-medium shadow-sm'
                       }`}
                     >
                       <div className="flex items-center justify-between font-bold">
-                        <div className="flex items-center gap-1.5">
-                          <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
-                          <span>{n.title}</span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <MessageSquare className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+                          <span className="truncate">{n.title}</span>
                         </div>
-                        <span className="text-[10px] text-slate-400 font-normal">
-                          {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="text-[10px] text-slate-400 font-normal">
+                            {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                        </div>
                       </div>
                       <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">{n.content}</p>
                     </div>
