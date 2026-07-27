@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class UploadService {
@@ -18,7 +18,7 @@ export class UploadService {
   }
 
   initChunkedUpload(fileName: string, totalChunks: number, mimeType: string) {
-    const uploadId = `${Date.now()}_${uuidv4().substring(0, 8)}`;
+    const uploadId = `${Date.now()}_${randomUUID().substring(0, 8)}`;
     const sessionDir = path.join(this.tempDir, uploadId);
     fs.mkdirSync(sessionDir, { recursive: true });
 
