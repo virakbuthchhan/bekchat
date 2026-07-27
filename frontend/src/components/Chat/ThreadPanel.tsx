@@ -3,6 +3,7 @@ import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
 import { X, Send, MessageSquare } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface Message {
   id: string;
@@ -22,6 +23,7 @@ interface ThreadPanelProps {
 }
 
 export const ThreadPanel: React.FC<ThreadPanelProps> = ({ parentMessage, onClose, onSendReply }) => {
+  const { t } = useLanguage();
   const [replies, setReplies] = useState<Message[]>([]);
   const [replyContent, setReplyContent] = useState('');
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export const ThreadPanel: React.FC<ThreadPanelProps> = ({ parentMessage, onClose
       <div className="h-14 px-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between font-bold text-slate-900 dark:text-slate-100">
         <div className="flex items-center gap-2 text-sm">
           <MessageSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          <span>Thread Replies</span>
+          <span>{t('common.reply', 'Thread Replies')}</span>
         </div>
         <button
           onClick={onClose}
@@ -86,9 +88,9 @@ export const ThreadPanel: React.FC<ThreadPanelProps> = ({ parentMessage, onClose
       {/* Replies list */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {loading ? (
-          <div className="text-center text-slate-400 text-xs py-4">Loading replies...</div>
+          <div className="text-center text-slate-400 text-xs py-4">{t('common.loading', 'Loading replies...')}</div>
         ) : replies.length === 0 ? (
-          <div className="text-center text-slate-400 text-xs py-4">No replies yet. Start the thread!</div>
+          <div className="text-center text-slate-400 text-xs py-4">{t('chat.start_conversation', 'No replies yet. Start the thread!')}</div>
         ) : (
           replies.map((reply) => (
             <div key={reply.id} className="flex gap-2.5 items-start bg-slate-100 dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800/50">
@@ -121,7 +123,7 @@ export const ThreadPanel: React.FC<ThreadPanelProps> = ({ parentMessage, onClose
             value={replyContent}
             onChange={(e) => setReplyContent(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Reply in thread..."
+            placeholder={`${t('common.reply', 'Reply')}...`}
             className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:border-indigo-500"
           />
           <button

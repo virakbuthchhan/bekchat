@@ -13,6 +13,7 @@ import {
   User,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface AuthPageProps {
   mode: 'login' | 'register';
@@ -20,6 +21,7 @@ interface AuthPageProps {
 
 export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   const { login, register } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -94,7 +96,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Sign In
+              {t('auth.sign_in', 'Sign In')}
             </Link>
             <Link
               to="/register"
@@ -104,7 +106,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Create Account
+              {t('auth.register', 'Register')}
             </Link>
           </div>
 
@@ -119,7 +121,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
             {mode === 'register' && (
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Username
+                  {t('auth.username', 'Username')}
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
@@ -137,7 +139,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Email Address
+                {t('auth.email', 'Email Address')}
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
@@ -154,7 +156,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Password
+                {t('auth.password', 'Password')}
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
@@ -174,7 +176,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
               disabled={isSubmitting}
               className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
             >
-              <span>{isSubmitting ? 'Processing...' : mode === 'login' ? 'Sign In to Workspace' : 'Create Account'}</span>
+              <span>{isSubmitting ? t('common.loading', 'Processing...') : mode === 'login' ? t('auth.sign_in', 'Sign In') : t('auth.register', 'Register')}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>

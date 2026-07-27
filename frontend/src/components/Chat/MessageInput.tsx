@@ -30,6 +30,7 @@ import {
   Image,
   Loader2,
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface MessageInputProps {
   channelName: string;
@@ -48,6 +49,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   replyingToMessage,
   onCancelReply,
 }) => {
+  const { t } = useLanguage();
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<any[]>([]);
   const [showFormatting, setShowFormatting] = useState(true);
@@ -566,7 +568,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       {isDraggingOver && (
         <div className="absolute inset-0 z-50 bg-indigo-600/90 backdrop-blur-xs rounded-2xl flex flex-col items-center justify-center text-white border-2 border-dashed border-white m-2 select-none animate-in fade-in duration-100">
           <Paperclip className="w-8 h-8 mb-2 animate-bounce" />
-          <span className="font-bold text-sm">Drop files to attach to message</span>
+          <span className="font-bold text-sm">{t('chat.drop_files_hint', 'Drop files to attach to message')}</span>
           <span className="text-xs text-indigo-200">Photos, videos, audio, documents, zip, and more</span>
         </div>
       )}
@@ -578,7 +580,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             <Reply className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
             <div className="flex flex-col min-w-0">
               <span className="font-bold text-indigo-700 dark:text-indigo-300 text-[11px]">
-                Replying to {replyingToMessage.sender?.username ? `@${replyingToMessage.sender.username}` : 'User'}
+                {t('chat.replying_to', 'Replying to')} {replyingToMessage.sender?.username ? `@${replyingToMessage.sender.username}` : 'User'}
               </span>
               <span className="text-slate-600 dark:text-slate-300 truncate text-xs">
                 {replyingToMessage.content}
@@ -588,7 +590,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <button
             onClick={onCancelReply}
             className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-full transition-colors"
-            title="Cancel reply"
+            title={t('common.cancel', 'Cancel')}
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -603,7 +605,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-rose-500 rounded-full animate-ping" />
                 <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
-                  Recording {formatTimer(recordingSeconds)}
+                  {t('chat.recording', 'Recording')} {formatTimer(recordingSeconds)}
                 </span>
               </div>
             ) : (
@@ -615,7 +617,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                   {isPlayingPreview ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                 </button>
                 <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
-                  Voice Note Preview ({formatTimer(recordingSeconds)})
+                  {t('chat.voice_preview', 'Voice Note Preview')} ({formatTimer(recordingSeconds)})
                 </span>
               </div>
             )}
@@ -625,7 +627,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             <button
               onClick={cancelVoiceRecording}
               className="p-1.5 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              title="Discard voice message"
+              title={t('chat.discard_voice', 'Discard voice message')}
             >
               <Trash className="w-4 h-4" />
             </button>
@@ -635,7 +637,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 onClick={stopVoiceRecording}
                 className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold shadow"
               >
-                Done
+                {t('common.save', 'Done')}
               </button>
             ) : (
               <button
@@ -643,7 +645,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow flex items-center gap-1.5 transition-all"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>Send Voice Note</span>
+                <span>{t('chat.send_voice_note', 'Send Voice Note')}</span>
               </button>
             )}
           </div>
@@ -846,7 +848,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             value={content}
             onChange={handleTextChange}
             onKeyDown={handleKeyDown}
-            placeholder={`Message #${channelName}`}
+            placeholder={`${t('chat.placeholder', 'Message')} #${channelName}`}
             className="w-full bg-transparent border-0 focus:ring-0 resize-none text-xs md:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 overflow-y-auto focus:outline-none min-h-[36px] max-h-[220px]"
           />
         </div>

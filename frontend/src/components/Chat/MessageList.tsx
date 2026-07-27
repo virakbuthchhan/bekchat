@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useUserSettings } from '../../context/UserSettingsContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const formatBytes = (bytes: number, decimals = 1) => {
   if (!bytes || bytes === 0) return '0 B';
@@ -901,6 +902,8 @@ interface DeleteConfirmationModalProps {
 }
 
 const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({ message, onConfirm, onCancel }) => {
+  const { t } = useLanguage();
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel();
@@ -923,9 +926,9 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({ messa
             <Trash2 className="w-6 h-6" />
           </div>
           <div className="flex flex-col min-w-0">
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Delete Message?</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{t('chat.delete_title', 'Delete Message?')}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Are you sure you want to delete this message? This action cannot be undone.
+              {t('chat.delete_confirm', 'Are you sure you want to delete this message? This action cannot be undone.')}
             </p>
           </div>
         </div>
@@ -945,14 +948,14 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({ messa
             onClick={onCancel}
             className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition-colors"
           >
-            Cancel
+            {t('common.cancel', 'Cancel')}
           </button>
           <button
             onClick={onConfirm}
             className="px-4.5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-rose-600/30 transition-all active:scale-95 flex items-center gap-1.5"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete Message</span>
+            <span>{t('chat.delete_btn', 'Delete Message')}</span>
           </button>
         </div>
       </div>
@@ -1030,6 +1033,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 }) => {
   const { user } = useAuth();
   const { settings } = useUserSettings();
+  const { t } = useLanguage();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
@@ -1086,8 +1090,12 @@ export const MessageList: React.FC<MessageListProps> = ({
       {messages.length === 0 ? (
         <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 space-y-2 select-none">
           <MessageSquare className="w-12 h-12 stroke-[1.5] text-slate-300 dark:text-slate-600 mb-2" />
-          <p className="text-base font-semibold text-slate-700 dark:text-slate-300">No messages in this channel yet</p>
-          <p className="text-xs text-slate-500">Be the first to start the conversation!</p>
+          <p className="text-base font-semibold text-slate-700 dark:text-slate-300">
+            {t('chat.no_messages', 'No messages in this channel yet')}
+          </p>
+          <p className="text-xs text-slate-500">
+            {t('chat.start_conversation', 'Be the first to start the conversation!')}
+          </p>
         </div>
       ) : (
         messages.map((msg, idx) => {
