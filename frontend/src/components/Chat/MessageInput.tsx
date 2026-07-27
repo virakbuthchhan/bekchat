@@ -24,6 +24,10 @@ import {
   Paperclip,
   X,
   Reply,
+  Play,
+  Pause,
+  Trash,
+  Image,
 } from 'lucide-react';
 
 interface MessageInputProps {
@@ -46,6 +50,19 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<any[]>([]);
   const [showFormatting, setShowFormatting] = useState(true);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  // Voice Recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<any>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Popovers state
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -244,6 +261,153 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
+  // Voice Recording Logic
+  const startVoiceRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setAudioPreviewUrl(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      recorder.start();
+      setIsRecording(true);
+      setRecordingSeconds(0);
+
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      alert('Unable to access microphone. Please grant microphone permission in your browser.');
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    }
+  };
+
+  const cancelVoiceRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    setAudioPreviewUrl(null);
+    setAudioBlob(null);
+    setIsPlayingPreview(false);
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+  };
+
+  const togglePlayPreview = () => {
+    if (!audioPreviewUrl) return;
+    if (!previewAudioRef.current || previewAudioRef.current.src !== audioPreviewUrl) {
+      previewAudioRef.current = new Audio(audioPreviewUrl);
+      previewAudioRef.current.onended = () => setIsPlayingPreview(false);
+    }
+
+    if (isPlayingPreview) {
+      previewAudioRef.current.pause();
+      setIsPlayingPreview(false);
+    } else {
+      previewAudioRef.current.play();
+      setIsPlayingPreview(true);
+    }
+  };
+
+  const sendVoiceNote = () => {
+    if (!audioPreviewUrl) return;
+    const voiceAtt = {
+      fileName: `Voice_Note_${new Date().toISOString().substring(11, 19).replace(/:/g, '-')}.webm`,
+      fileUrl: audioPreviewUrl,
+      fileSize: audioBlob?.size || 0,
+      mimeType: 'audio/webm',
+    };
+
+    onSendMessage('', [...attachments, voiceAtt], replyingToMessage?.id);
+    cancelVoiceRecording();
+    setAttachments([]);
+    if (onCancelReply) onCancelReply();
+    if (onTypingStop) onTypingStop();
+  };
+
+  const formatTimer = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // DataURL File Processor for images, videos, documents, zip, etc.
+  const processFiles = (files: FileList | File[]) => {
+    if (!files || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setAttachments((prev) => [
+          ...prev,
+          {
+            fileName: file.name,
+            fileUrl: dataUrl,
+            fileSize: file.size,
+            mimeType: file.type || 'application/octet-stream',
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      processFiles(e.target.files);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+    if (e.dataTransfer.files) {
+      processFiles(e.dataTransfer.files);
+    }
+  };
+
   const handleSend = () => {
     if (!content.trim() && attachments.length === 0) return;
     onSendMessage(content, attachments, replyingToMessage?.id);
@@ -254,27 +418,22 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     if (onTypingStop) onTypingStop();
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const newAtts: any[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      newAtts.push({
-        fileName: f.name,
-        fileUrl: URL.createObjectURL(f),
-        fileSize: f.size,
-        mimeType: f.type,
-      });
-    }
-
-    setAttachments((prev) => [...prev, ...newAtts]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
   return (
-    <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 relative select-none">
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className="p-3 md:p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 relative select-none"
+    >
+      {/* Drag & Drop Visual Overlay */}
+      {isDraggingOver && (
+        <div className="absolute inset-0 z-50 bg-indigo-600/90 backdrop-blur-xs rounded-2xl flex flex-col items-center justify-center text-white border-2 border-dashed border-white m-2 select-none animate-in fade-in duration-100">
+          <Paperclip className="w-8 h-8 mb-2 animate-bounce" />
+          <span className="font-bold text-sm">Drop files to attach to message</span>
+          <span className="text-xs text-indigo-200">Photos, videos, audio, documents, zip, and more</span>
+        </div>
+      )}
+
       {/* Telegram-Style Reply Preview Bar */}
       {replyingToMessage && (
         <div className="flex items-center justify-between px-3.5 py-2 mb-2 bg-indigo-50/90 dark:bg-indigo-950/50 border-l-4 border-indigo-500 rounded-r-xl shadow-xs text-xs animate-in fade-in slide-in-from-bottom-1 duration-150">
@@ -298,6 +457,62 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           </button>
         </div>
       )}
+
+      {/* Voice Recording Control Bar */}
+      {(isRecording || audioPreviewUrl) && (
+        <div className="flex items-center justify-between p-3 mb-2 bg-rose-50/90 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800/60 rounded-2xl shadow-xs text-xs animate-in fade-in slide-in-from-bottom-1 duration-150">
+          <div className="flex items-center gap-3">
+            {isRecording ? (
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-rose-500 rounded-full animate-ping" />
+                <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
+                  Recording {formatTimer(recordingSeconds)}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={togglePlayPreview}
+                  className="p-2 bg-rose-600 hover:bg-rose-500 text-white rounded-full transition-transform active:scale-95 shadow"
+                >
+                  {isPlayingPreview ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                </button>
+                <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
+                  Voice Note Preview ({formatTimer(recordingSeconds)})
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={cancelVoiceRecording}
+              className="p-1.5 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              title="Discard voice message"
+            >
+              <Trash className="w-4 h-4" />
+            </button>
+
+            {isRecording ? (
+              <button
+                onClick={stopVoiceRecording}
+                className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold shadow"
+              >
+                Done
+              </button>
+            ) : (
+              <button
+                onClick={sendVoiceNote}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow flex items-center gap-1.5 transition-all"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Send Voice Note</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Hidden File Input */}
       <input
         type="file"
@@ -305,6 +520,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         onChange={handleFileUpload}
         className="hidden"
         multiple
+        accept="*"
       />
 
       {/* Mention Autocomplete Popover */}
@@ -356,21 +572,40 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       {/* Attachment Previews */}
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">
-          {attachments.map((att, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-200 dark:bg-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700"
-            >
-              <Paperclip className="w-3 h-3 text-slate-400" />
-              <span className="truncate max-w-xs">{att.fileName}</span>
-              <button
-                onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== idx))}
-                className="hover:text-rose-500 ml-1"
+          {attachments.map((att, idx) => {
+            const isImg = att.mimeType?.startsWith('image/');
+            const isVid = att.mimeType?.startsWith('video/');
+            const isAud = att.mimeType?.startsWith('audio/');
+
+            return (
+              <div
+                key={idx}
+                className="flex items-center gap-2 p-1.5 bg-slate-200 dark:bg-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 shadow-xs"
               >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
+                {isImg ? (
+                  <img src={att.fileUrl} alt={att.fileName} className="w-7 h-7 rounded object-cover" />
+                ) : isVid ? (
+                  <Video className="w-4 h-4 text-indigo-500" />
+                ) : isAud ? (
+                  <Mic className="w-4 h-4 text-rose-500" />
+                ) : (
+                  <Paperclip className="w-4 h-4 text-slate-400" />
+                )}
+                <div className="flex flex-col truncate max-w-xs">
+                  <span className="truncate font-medium">{att.fileName}</span>
+                  <span className="text-[10px] text-slate-500">
+                    {(att.fileSize / 1024).toFixed(1)} KB
+                  </span>
+                </div>
+                <button
+                  onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== idx))}
+                  className="hover:text-rose-500 p-1 text-slate-400"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -480,10 +715,22 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <div className="flex items-center gap-0.5 md:gap-1 text-slate-500 dark:text-slate-400">
             <button
               onClick={() => fileInputRef.current?.click()}
-              title="Attach File"
+              title="Attach File (Photos, Videos, PDFs, Docs, Audio)"
               className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded hover:text-slate-800 dark:hover:text-slate-200"
             >
               <Plus className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={startVoiceRecording}
+              title="Record Voice Message"
+              className={`p-1 rounded transition-colors ${
+                isRecording
+                  ? 'bg-rose-500/20 text-rose-500 animate-pulse'
+                  : 'hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Mic className="w-4 h-4 text-rose-500" />
             </button>
 
             <button

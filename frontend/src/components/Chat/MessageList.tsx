@@ -13,9 +13,115 @@ import {
   Check,
   SmilePlus,
   Reply,
+  Play,
+  Pause,
+  Video,
+  FileCode,
+  FileArchive,
+  ZoomIn,
+  Eye,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useUserSettings } from '../../context/UserSettingsContext';
+
+const formatBytes = (bytes: number, decimals = 1) => {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+};
+
+const VoicePlayer: React.FC<{ url: string; isSender?: boolean }> = ({ url, isSender }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const audio = new Audio(url);
+    audioRef.current = audio;
+
+    audio.onloadedmetadata = () => {
+      setDuration(audio.duration || 0);
+    };
+
+    audio.ontimeupdate = () => {
+      setCurrentTime(audio.currentTime || 0);
+    };
+
+    audio.onended = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+
+    return () => {
+      audio.pause();
+    };
+  }, [url]);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const formatTime = (sec: number) => {
+    if (isNaN(sec)) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div
+      className={`flex items-center gap-3 p-2.5 rounded-2xl shadow-xs my-1 min-w-[220px] max-w-xs select-none ${
+        isSender
+          ? 'bg-indigo-700/80 border border-indigo-500/50 text-white'
+          : 'bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100'
+      }`}
+    >
+      <button
+        onClick={togglePlay}
+        className={`p-2.5 rounded-full transition-transform active:scale-95 flex-shrink-0 ${
+          isSender
+            ? 'bg-white text-indigo-700 hover:bg-indigo-50'
+            : 'bg-indigo-600 text-white hover:bg-indigo-500'
+        }`}
+      >
+        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+      </button>
+
+      <div className="flex-1 flex flex-col gap-1 min-w-0">
+        <div className="flex items-center justify-between text-[11px] font-mono font-semibold opacity-90">
+          <span>Voice Message</span>
+          <span>
+            {formatTime(currentTime)} / {formatTime(duration)}
+          </span>
+        </div>
+        {/* Animated Waveform indicator */}
+        <div className="flex items-center gap-0.5 h-4 overflow-hidden">
+          {[40, 70, 30, 90, 50, 80, 40, 100, 60, 40, 80, 50, 30, 70, 40].map((h, i) => (
+            <span
+              key={i}
+              style={{ height: `${h}%` }}
+              className={`w-1 rounded-full transition-all ${
+                isPlaying ? 'animate-pulse' : 'opacity-50'
+              } ${isSender ? 'bg-indigo-200' : 'bg-indigo-500'}`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface Attachment {
   id: string;
@@ -92,6 +198,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const [activeReactionPickerMessageId, setActiveReactionPickerMessageId] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const EMOJI_OPTIONS = ['👍', '❤️', '🚀', '🎉', '🔥', '👀', '💡'];
@@ -328,26 +435,87 @@ export const MessageList: React.FC<MessageListProps> = ({
                     </div>
                   )}
 
-                  {/* Attachments */}
+                  {/* Rich Attachments (Voice Notes, Photos, Videos, Documents) */}
                   {msg.attachments && msg.attachments.length > 0 && (
-                    <div className="mt-2.5 flex flex-wrap gap-2">
-                      {msg.attachments.map((att) => (
-                        <a
-                          key={att.id}
-                          href={att.fileUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={`flex items-center gap-2 p-2 rounded-lg text-xs transition-colors border ${
-                            isSender
-                              ? 'bg-indigo-700/60 border-indigo-500/40 text-indigo-100 hover:bg-indigo-700'
-                              : 'bg-slate-100 dark:bg-slate-900/80 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-200'
-                          }`}
-                        >
-                          <FileText className="w-4 h-4" />
-                          <span className="truncate max-w-xs">{att.fileName}</span>
-                          <Download className="w-3.5 h-3.5 opacity-70" />
-                        </a>
-                      ))}
+                    <div className="mt-2.5 space-y-2 max-w-full overflow-hidden">
+                      {msg.attachments.map((att) => {
+                        const isImg = att.mimeType?.startsWith('image/');
+                        const isVid = att.mimeType?.startsWith('video/');
+                        const isAud = att.mimeType?.startsWith('audio/');
+                        const isCode = att.mimeType?.includes('json') || att.mimeType?.includes('javascript') || att.fileName.endsWith('.js') || att.fileName.endsWith('.ts');
+                        const isZip = att.mimeType?.includes('zip') || att.mimeType?.includes('tar') || att.fileName.endsWith('.zip');
+
+                        if (isAud) {
+                          return <VoicePlayer key={att.id} url={att.fileUrl} isSender={isSender} />;
+                        }
+
+                        if (isVid) {
+                          return (
+                            <div key={att.id} className="my-1 overflow-hidden rounded-2xl border border-slate-700/50 shadow-md">
+                              <video
+                                src={att.fileUrl}
+                                controls
+                                className="max-h-80 max-w-full rounded-2xl bg-black"
+                              />
+                            </div>
+                          );
+                        }
+
+                        if (isImg) {
+                          return (
+                            <div
+                              key={att.id}
+                              onClick={() => setLightboxImage({ url: att.fileUrl, name: att.fileName })}
+                              className="group/img relative my-1 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md cursor-pointer max-w-xs md:max-w-md"
+                            >
+                              <img
+                                src={att.fileUrl}
+                                alt={att.fileName}
+                                className="max-h-72 w-full object-cover transition-transform duration-300 group-hover/img:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white gap-2">
+                                <ZoomIn className="w-5 h-5" />
+                                <span className="text-xs font-semibold">Click to View</span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Document & Generic File Card
+                        return (
+                          <a
+                            key={att.id}
+                            href={att.fileUrl}
+                            download={att.fileName}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`flex items-center justify-between gap-3 p-3 rounded-xl text-xs transition-all border my-1 max-w-xs md:max-w-sm ${
+                              isSender
+                                ? 'bg-indigo-700/60 border-indigo-500/40 text-indigo-100 hover:bg-indigo-700'
+                                : 'bg-slate-100 dark:bg-slate-900/80 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              {isCode ? (
+                                <FileCode className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                              ) : isZip ? (
+                                <FileArchive className="w-5 h-5 text-purple-400 flex-shrink-0" />
+                              ) : (
+                                <FileText className="w-5 h-5 text-indigo-400 flex-shrink-0" />
+                              )}
+                              <div className="flex flex-col min-w-0">
+                                <span className="truncate font-semibold">{att.fileName}</span>
+                                <span className="text-[10px] opacity-75 font-mono">
+                                  {formatBytes(att.fileSize)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0 opacity-80 hover:opacity-100">
+                              <Download className="w-4 h-4" />
+                            </div>
+                          </a>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -487,6 +655,46 @@ export const MessageList: React.FC<MessageListProps> = ({
 
       {/* Anchor element for auto-scrolling to bottom */}
       <div ref={messagesEndRef} />
+
+      {/* Image Lightbox Modal */}
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
+          onClick={() => setLightboxImage(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] flex flex-col items-center gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={lightboxImage.url}
+              alt={lightboxImage.name}
+              className="max-h-[80vh] max-w-full rounded-2xl object-contain shadow-2xl border border-slate-700/60"
+            />
+            <div className="flex items-center justify-between w-full px-2 text-white text-xs font-semibold">
+              <span className="truncate max-w-md">{lightboxImage.name}</span>
+              <div className="flex items-center gap-3">
+                <a
+                  href={lightboxImage.url}
+                  download={lightboxImage.name}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl flex items-center gap-1.5 transition-colors shadow"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download</span>
+                </a>
+                <button
+                  onClick={() => setLightboxImage(null)}
+                  className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
