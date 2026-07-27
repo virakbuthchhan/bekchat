@@ -6,10 +6,17 @@ Designed with modern Slack-style aesthetics, vibrant glassmorphic UI elements, d
 
 ---
 
+<p align="center">
+  <img src="./docs/bek-chat-screenshot.png" alt="Bek-Chat Application Screenshot" width="800" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
+</p>
+
+---
+
 ## 🌟 Key Features
 
-### 💬 Real-Time Chat & Slack-Style Formatting
+### 💬 Real-Time Chat & Slack/Telegram-Style Message Features
 - **WebSocket & Redis Pub/Sub Engine**: Zero-latency channel messaging, direct messages, and typing indicators across distributed containers.
+- **Telegram-Style Specific Message Replies**: Inline quoted reply cards with parent message content & sender snippets, click-to-scroll navigation, and interactive reply preview bar.
 - **Rich Text Toolbar**: Bold, italic, underline, strikethrough, links, bullet/numbered lists, blockquotes, inline code, and code blocks.
 - **Dynamic Auto-Expanding Input**: Message box smoothly auto-resizes as line height increases.
 - **Syntax Highlighted Code Snippets**: Code block cards with language badges (`JS`, `PYTHON`, `JSON`, `HTML`) and 1-click **"Copy Code"** button.
