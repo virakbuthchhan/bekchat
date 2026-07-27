@@ -516,11 +516,50 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     if (onTypingStop) onTypingStop();
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+
+    const pastedFiles: File[] = [];
+
+    if (clipboardData.files && clipboardData.files.length > 0) {
+      for (let i = 0; i < clipboardData.files.length; i++) {
+        pastedFiles.push(clipboardData.files[i]);
+      }
+    }
+
+    if (clipboardData.items) {
+      for (let i = 0; i < clipboardData.items.length; i++) {
+        const item = clipboardData.items[i];
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) {
+            const exists = pastedFiles.some((f) => f.name === file.name && f.size === file.size);
+            if (!exists) {
+              const ext = file.type ? file.type.split('/')[1] || 'png' : 'png';
+              const name =
+                file.name && file.name !== 'image.png'
+                  ? file.name
+                  : `Pasted_File_${new Date().toISOString().substring(11, 19).replace(/:/g, '-')}.${ext}`;
+              const namedFile = new File([file], name, { type: file.type || 'application/octet-stream' });
+              pastedFiles.push(namedFile);
+            }
+          }
+        }
+      }
+    }
+
+    if (pastedFiles.length > 0) {
+      processFiles(pastedFiles);
+    }
+  };
+
   return (
     <div
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onPaste={handlePaste}
       className="p-3 md:p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 relative select-none"
     >
       {/* Drag & Drop Visual Overlay */}

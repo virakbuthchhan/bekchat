@@ -123,19 +123,17 @@ const VoicePlayer: React.FC<{ url: string; isSender?: boolean }> = ({ url, isSen
 
   return (
     <div
-      className={`flex items-center gap-2.5 p-2.5 rounded-2xl shadow-xs my-1 min-w-[240px] max-w-xs select-none ${
-        isSender
+      className={`flex items-center gap-2.5 p-2.5 rounded-2xl shadow-xs my-1 min-w-[240px] max-w-xs select-none ${isSender
           ? 'bg-indigo-700/80 border border-indigo-500/50 text-white'
           : 'bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100'
-      }`}
+        }`}
     >
       <button
         onClick={togglePlay}
-        className={`p-2.5 rounded-full transition-transform active:scale-95 flex-shrink-0 ${
-          isSender
+        className={`p-2.5 rounded-full transition-transform active:scale-95 flex-shrink-0 ${isSender
             ? 'bg-white text-indigo-700 hover:bg-indigo-50'
             : 'bg-indigo-600 text-white hover:bg-indigo-500'
-        }`}
+          }`}
       >
         {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
       </button>
@@ -153,9 +151,8 @@ const VoicePlayer: React.FC<{ url: string; isSender?: boolean }> = ({ url, isSen
             <span
               key={i}
               style={{ height: `${h}%` }}
-              className={`w-1 rounded-full transition-all ${
-                isPlaying ? 'animate-pulse' : 'opacity-50'
-              } ${isSender ? 'bg-indigo-200' : 'bg-indigo-500'}`}
+              className={`w-1 rounded-full transition-all ${isPlaying ? 'animate-pulse' : 'opacity-50'
+                } ${isSender ? 'bg-indigo-200' : 'bg-indigo-500'}`}
             />
           ))}
         </div>
@@ -164,11 +161,10 @@ const VoicePlayer: React.FC<{ url: string; isSender?: boolean }> = ({ url, isSen
       {/* Speed controller button */}
       <button
         onClick={cycleSpeed}
-        className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all active:scale-95 flex-shrink-0 ${
-          isSender
+        className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all active:scale-95 flex-shrink-0 ${isSender
             ? 'bg-indigo-600/90 hover:bg-indigo-500 text-white border border-indigo-400/40 shadow-xs'
             : 'bg-slate-200 dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 hover:bg-slate-300 dark:hover:bg-slate-600'
-        }`}
+          }`}
         title="Playback Speed (0.5x, 1x, 1.25x, 1.5x, 2x)"
       >
         {playbackSpeed}x
@@ -294,7 +290,7 @@ const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({ images, initial
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/92 backdrop-blur-md flex flex-col justify-between p-3 md:p-6 animate-in fade-in duration-200 select-none overflow-hidden"
+      className="fixed inset-0 z-[100] w-screen h-screen bg-black/96 backdrop-blur-xl flex flex-col justify-between p-3 md:p-6 animate-in fade-in duration-150 select-none overflow-hidden"
       onClick={onClose}
     >
       {/* Top Header Controls Bar */}
@@ -370,7 +366,7 @@ const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({ images, initial
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
             transition: isDragging ? 'none' : 'transform 0.15s ease-out',
           }}
-          className="max-h-[75vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl pointer-events-auto"
+          className="max-h-[88vh] max-w-[96vw] object-contain rounded-2xl shadow-2xl pointer-events-auto"
         />
 
         {/* Next Image Button */}
@@ -547,7 +543,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ url, name, onClose })
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/94 backdrop-blur-md flex flex-col justify-between p-3 md:p-6 animate-in fade-in duration-200 select-none overflow-hidden"
+      className="fixed inset-0 z-[100] w-screen h-screen bg-black/96 backdrop-blur-xl flex flex-col justify-between p-3 md:p-6 animate-in fade-in duration-150 select-none overflow-hidden"
       onClick={onClose}
     >
       {/* Top Header Bar */}
@@ -611,9 +607,8 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ url, name, onClose })
 
         <canvas
           ref={canvasRef}
-          className={`shadow-2xl rounded-xl border border-slate-800/80 transition-all ${
-            isLoading ? 'hidden' : 'block'
-          }`}
+          className={`shadow-2xl rounded-xl border border-slate-800/80 transition-all ${isLoading ? 'hidden' : 'block'
+            }`}
         />
       </div>
 
@@ -782,7 +777,7 @@ const VideoLightboxModal: React.FC<VideoLightboxModalProps> = ({ url, name, onCl
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/94 backdrop-blur-md flex flex-col justify-between p-3 md:p-6 animate-in fade-in duration-200 select-none overflow-hidden"
+      className="fixed inset-0 z-[100] w-screen h-screen bg-black/96 backdrop-blur-xl flex flex-col justify-between p-3 md:p-6 animate-in fade-in duration-150 select-none overflow-hidden"
       onClick={onClose}
     >
       {/* Top Header Bar */}
@@ -833,7 +828,7 @@ const VideoLightboxModal: React.FC<VideoLightboxModalProps> = ({ url, name, onCl
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
           onClick={togglePlay}
-          className="max-h-[72vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl cursor-pointer"
+          className="max-h-[85vh] max-w-[96vw] object-contain rounded-2xl shadow-2xl cursor-pointer"
         />
       </div>
 
@@ -893,6 +888,72 @@ const VideoLightboxModal: React.FC<VideoLightboxModalProps> = ({ url, name, onCl
               <Maximize2 className="w-4 h-4" />
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface DeleteConfirmationModalProps {
+  message: Message;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({ message, onConfirm, onCancel }) => {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-[110] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col gap-4 animate-in zoom-in-95 duration-150"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 bg-rose-500/10 text-rose-500 rounded-2xl border border-rose-500/20 flex-shrink-0">
+            <Trash2 className="w-6 h-6" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Delete Message?</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Are you sure you want to delete this message? This action cannot be undone.
+            </p>
+          </div>
+        </div>
+
+        {/* Message Content Snippet Preview */}
+        <div className="p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-2xl text-xs text-slate-700 dark:text-slate-300 max-h-24 overflow-y-auto italic">
+          {message.content ? (
+            <span className="line-clamp-3">"{message.content}"</span>
+          ) : (
+            <span className="text-slate-400 font-mono text-[11px]">[ Attachment Message ]</span>
+          )}
+        </div>
+
+        {/* Buttons */}
+        <div className="flex items-center justify-end gap-2.5 pt-1">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4.5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-rose-600/30 transition-all active:scale-95 flex items-center gap-1.5"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Message</span>
+          </button>
         </div>
       </div>
     </div>
@@ -980,6 +1041,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   } | null>(null);
   const [previewPdf, setPreviewPdf] = useState<{ url: string; name: string } | null>(null);
   const [previewVideo, setPreviewVideo] = useState<{ url: string; name: string } | null>(null);
+  const [confirmDeleteMessage, setConfirmDeleteMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const EMOJI_OPTIONS = ['👍', '❤️', '🚀', '🎉', '🔥', '👀', '💡'];
@@ -1020,7 +1082,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50 dark:bg-slate-950 font-sans">
+    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50 dark:bg-slate-950 font-sans">
       {messages.length === 0 ? (
         <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 space-y-2 select-none">
           <MessageSquare className="w-12 h-12 stroke-[1.5] text-slate-300 dark:text-slate-600 mb-2" />
@@ -1052,11 +1114,9 @@ export const MessageList: React.FC<MessageListProps> = ({
             <div
               id={`msg-${msg.id}`}
               key={msg.id}
-              className={`group relative flex gap-3 items-start max-w-[85%] md:max-w-[78%] transition-all duration-300 rounded-2xl p-1 ${
-                isPickerActive ? 'z-40' : 'z-0'
-              } ${
-                highlightedMessageId === msg.id ? 'ring-2 ring-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20' : ''
-              } ${isSender ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
+              className={`group relative flex gap-3 items-start max-w-[85%] md:max-w-[78%] transition-all duration-300 rounded-2xl p-1 ${isPickerActive ? 'z-40' : 'z-0'
+                } ${highlightedMessageId === msg.id ? 'ring-2 ring-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20' : ''
+                } ${isSender ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
             >
               {/* Sender Avatar */}
               <img
@@ -1089,21 +1149,19 @@ export const MessageList: React.FC<MessageListProps> = ({
 
                 {/* Message Bubble Container */}
                 <div
-                  className={`relative p-3.5 rounded-2xl shadow-sm text-sm ${
-                    isSender
+                  className={`relative p-3.5 rounded-2xl shadow-sm text-sm ${isSender
                       ? 'bg-indigo-600 text-white rounded-tr-none'
                       : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-tl-none'
-                  }`}
+                    }`}
                 >
                   {/* Telegram Quoted Reply Card */}
                   {msg.parent && (
                     <div
                       onClick={() => scrollToMessage(msg.parent!.id)}
-                      className={`mb-2 p-2 rounded-xl cursor-pointer border-l-4 text-xs select-none transition-all ${
-                        isSender
+                      className={`mb-2 p-2 rounded-xl cursor-pointer border-l-4 text-xs select-none transition-all ${isSender
                           ? 'bg-indigo-700/60 border-indigo-300 text-indigo-100 hover:bg-indigo-700'
                           : 'bg-slate-100 dark:bg-slate-800/80 border-indigo-500 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800'
-                      }`}
+                        }`}
                     >
                       <div className="font-bold text-[11px] text-indigo-300 dark:text-indigo-400 mb-0.5 flex items-center gap-1">
                         <Reply className="w-3 h-3 inline" />
@@ -1138,9 +1196,8 @@ export const MessageList: React.FC<MessageListProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <div className={`leading-relaxed prose max-w-none text-sm ${
-                      isSender ? 'prose-invert text-white' : 'dark:prose-invert text-slate-900 dark:text-slate-100'
-                    }`}>
+                    <div className={`leading-relaxed prose max-w-none text-sm ${isSender ? 'prose-invert text-white' : 'dark:prose-invert text-slate-900 dark:text-slate-100'
+                      }`}>
                       <ReactMarkdown
                         components={{
                           a({ href, children }) {
@@ -1364,11 +1421,10 @@ export const MessageList: React.FC<MessageListProps> = ({
                               <div
                                 key={att.id}
                                 onClick={() => setPreviewPdf({ url: att.fileUrl, name: att.fileName })}
-                                className={`flex items-center gap-3 p-3 rounded-2xl border my-1 transition-all cursor-pointer hover:scale-[1.01] ${
-                                  isSender
+                                className={`flex items-center gap-3 p-3 rounded-2xl border my-1 transition-all cursor-pointer hover:scale-[1.01] ${isSender
                                     ? 'bg-rose-900/40 hover:bg-rose-900/60 border-rose-500/40 text-white'
                                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-rose-400'
-                                }`}
+                                  }`}
                               >
                                 <div className="p-2 bg-rose-500/20 text-rose-400 rounded-xl flex-shrink-0 border border-rose-500/30">
                                   <FileText className="w-5 h-5" />
@@ -1392,11 +1448,10 @@ export const MessageList: React.FC<MessageListProps> = ({
                               download={att.fileName}
                               target="_blank"
                               rel="noreferrer"
-                              className={`flex items-center gap-3 p-3 rounded-2xl border my-1 transition-all hover:scale-[1.01] ${
-                                isSender
+                              className={`flex items-center gap-3 p-3 rounded-2xl border my-1 transition-all hover:scale-[1.01] ${isSender
                                   ? 'bg-indigo-700/60 hover:bg-indigo-700/80 border-indigo-500/50 text-white'
                                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-indigo-400'
-                              }`}
+                                }`}
                             >
                               <div className="p-2 bg-indigo-500/20 rounded-xl text-indigo-400 flex-shrink-0">
                                 {isCode ? <FileCode className="w-5 h-5" /> : isZip ? <FileArchive className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
@@ -1421,9 +1476,8 @@ export const MessageList: React.FC<MessageListProps> = ({
                         className="fixed inset-0 z-40 bg-black/5 dark:bg-black/20"
                         onClick={() => setActiveReactionPickerMessageId(null)}
                       />
-                      <div className={`absolute z-50 shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-150 ${
-                        isSender ? 'right-0' : 'left-0'
-                      } ${popoverVerticalClass}`}>
+                      <div className={`absolute z-50 shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-150 ${isSender ? 'right-0' : 'left-0'
+                        } ${popoverVerticalClass}`}>
                         <EmojiPicker
                           theme={Theme.AUTO}
                           onEmojiClick={(emojiData) => {
@@ -1441,9 +1495,8 @@ export const MessageList: React.FC<MessageListProps> = ({
 
                   {/* Action Toolbar on Hover */}
                   <div
-                    className={`absolute hidden group-hover:flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1 shadow-lg z-10 -top-4 ${
-                      isSender ? 'right-0' : 'left-0'
-                    }`}
+                    className={`absolute hidden group-hover:flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1 shadow-lg z-10 -top-4 ${isSender ? 'right-0' : 'left-0'
+                      }`}
                   >
                     {EMOJI_OPTIONS.map((emoji) => (
                       <button
@@ -1488,7 +1541,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => onDeleteMessage(msg.id)}
+                          onClick={() => setConfirmDeleteMessage(msg)}
                           title="Delete message"
                           className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 hover:text-rose-600"
                         >
@@ -1506,11 +1559,10 @@ export const MessageList: React.FC<MessageListProps> = ({
                       <button
                         key={emoji}
                         onClick={() => onToggleReaction(msg.id, emoji)}
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-colors border ${
-                          data.hasReacted
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-colors border ${data.hasReacted
                             ? 'bg-indigo-100 dark:bg-indigo-600/30 border-indigo-300 dark:border-indigo-500/50 text-indigo-700 dark:text-indigo-300'
                             : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
-                        }`}
+                          }`}
                       >
                         <span>{emoji}</span>
                         <span className="font-semibold text-[11px]">{data.count}</span>
@@ -1574,6 +1626,18 @@ export const MessageList: React.FC<MessageListProps> = ({
           url={previewVideo.url}
           name={previewVideo.name}
           onClose={() => setPreviewVideo(null)}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteMessage && (
+        <DeleteConfirmationModal
+          message={confirmDeleteMessage}
+          onConfirm={() => {
+            onDeleteMessage(confirmDeleteMessage.id);
+            setConfirmDeleteMessage(null);
+          }}
+          onCancel={() => setConfirmDeleteMessage(null)}
         />
       )}
     </div>
