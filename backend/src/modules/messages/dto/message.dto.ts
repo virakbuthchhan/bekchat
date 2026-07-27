@@ -1,22 +1,27 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateAttachmentDto {
   @ApiProperty({ example: 'document.pdf' })
   @IsString()
+  @IsNotEmpty()
   fileName: string;
 
-  @ApiProperty({ example: 'https://example.com/uploads/document.pdf' })
+  @ApiProperty({ example: '/uploads/document.pdf' })
   @IsString()
+  @IsNotEmpty()
   fileUrl: string;
 
-  @ApiProperty({ example: 102450 })
-  fileSize: number;
+  @ApiProperty({ example: 102450, required: false })
+  @IsOptional()
+  @IsNumber()
+  fileSize?: number;
 
-  @ApiProperty({ example: 'application/pdf' })
+  @ApiProperty({ example: 'application/pdf', required: false })
+  @IsOptional()
   @IsString()
-  mimeType: string;
+  mimeType?: string;
 }
 
 export class CreateMessageDto {

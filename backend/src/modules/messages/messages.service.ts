@@ -51,10 +51,10 @@ export class MessagesService {
         attachments: dto.attachments
           ? {
               create: dto.attachments.map((att) => ({
-                fileName: att.fileName,
+                fileName: att.fileName || 'attachment',
                 fileUrl: att.fileUrl,
-                fileSize: att.fileSize,
-                mimeType: att.mimeType,
+                fileSize: typeof att.fileSize === 'number' && !isNaN(att.fileSize) ? Math.round(att.fileSize) : 0,
+                mimeType: att.mimeType || 'application/octet-stream',
               })),
             }
           : undefined,
@@ -79,8 +79,9 @@ export class MessagesService {
     this.chatGateway.emitMessageNew(dto.channelId, message);
 
     // 2. Scan content for @username mentions
+    const textContent = dto.content || '';
     const mentionRegex = /@([a-zA-Z0-9_-]+)/g;
-    const matches = Array.from(dto.content.matchAll(mentionRegex));
+    const matches = Array.from(textContent.matchAll(mentionRegex));
     const mentionedUsernames = Array.from(new Set(matches.map((m) => m[1])));
 
     if (mentionedUsernames.length > 0) {
@@ -94,7 +95,7 @@ export class MessagesService {
             userId: targetUser.id,
             type: 'MENTION',
             title: `Mentioned by @${message.sender?.username || 'User'}`,
-            content: dto.content.substring(0, 100),
+            content: textContent.substring(0, 100) || 'Sent an attachment',
             channelId: dto.channelId,
           });
 

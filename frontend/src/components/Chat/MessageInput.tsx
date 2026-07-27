@@ -343,7 +343,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     mimeType: string,
     onProgress?: (percent: number) => void
   ): Promise<any> => {
-    const CHUNK_SIZE = 1024 * 1024; // 1 MB chunks
+    const CHUNK_SIZE = 512 * 1024; // 512 KB chunks for optimal upload speed & memory
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
     if (totalChunks <= 1) {
@@ -408,10 +408,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     try {
       const uploaded = await uploadFileInChunks(audioBlob, fileName, mimeType);
       const voiceAtt = {
-        fileName: uploaded.fileName,
+        fileName: uploaded.fileName || fileName,
         fileUrl: uploaded.fileUrl,
-        fileSize: uploaded.fileSize,
-        mimeType: uploaded.mimeType,
+        fileSize: Math.round(uploaded.fileSize || audioBlob.size || 0),
+        mimeType: uploaded.mimeType || mimeType,
       };
 
       onSendMessage('', [...attachments, voiceAtt], replyingToMessage?.id);
