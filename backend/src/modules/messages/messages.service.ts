@@ -59,6 +59,13 @@ export class MessagesService {
         sender: {
           select: { id: true, username: true, avatarUrl: true },
         },
+        parent: {
+          select: {
+            id: true,
+            content: true,
+            sender: { select: { id: true, username: true, avatarUrl: true } },
+          },
+        },
         attachments: true,
         reactions: true,
       },
@@ -107,7 +114,11 @@ export class MessagesService {
 
   async getChannelMessages(channelId: string, limit = 50, beforeMessageId?: string, parentId?: string) {
     const take = typeof limit === 'number' && !isNaN(limit) && limit > 0 ? limit : 50;
-    let whereClause: any = { channelId, parentId: parentId || null };
+    let whereClause: any = { channelId };
+
+    if (parentId !== undefined) {
+      whereClause.parentId = parentId;
+    }
 
     if (beforeMessageId) {
       const beforeMsg = await this.prisma.message.findUnique({
@@ -125,6 +136,13 @@ export class MessagesService {
       include: {
         sender: {
           select: { id: true, username: true, avatarUrl: true },
+        },
+        parent: {
+          select: {
+            id: true,
+            content: true,
+            sender: { select: { id: true, username: true, avatarUrl: true } },
+          },
         },
         attachments: true,
         reactions: {

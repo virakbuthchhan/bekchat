@@ -23,13 +23,16 @@ import {
   ChevronDown,
   Paperclip,
   X,
+  Reply,
 } from 'lucide-react';
 
 interface MessageInputProps {
   channelName: string;
-  onSendMessage: (content: string, attachments?: any[]) => void;
+  onSendMessage: (content: string, attachments?: any[], parentId?: string) => void;
   onTyping?: () => void;
   onTypingStop?: () => void;
+  replyingToMessage?: any | null;
+  onCancelReply?: () => void;
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({
@@ -37,6 +40,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   onTyping,
   onTypingStop,
+  replyingToMessage,
+  onCancelReply,
 }) => {
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<any[]>([]);
@@ -70,6 +75,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showEmojiPicker]);
+
+  // Auto-focus textarea when replyingToMessage changes
+  useEffect(() => {
+    if (replyingToMessage && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [replyingToMessage]);
 
   // Auto-resize textarea height as content changes
   useEffect(() => {
@@ -234,10 +246,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   const handleSend = () => {
     if (!content.trim() && attachments.length === 0) return;
-    onSendMessage(content, attachments);
+    onSendMessage(content, attachments, replyingToMessage?.id);
     setContent('');
     setAttachments([]);
     setShowMentionMenu(false);
+    if (onCancelReply) onCancelReply();
     if (onTypingStop) onTypingStop();
   };
 
@@ -262,6 +275,29 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   return (
     <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 relative select-none">
+      {/* Telegram-Style Reply Preview Bar */}
+      {replyingToMessage && (
+        <div className="flex items-center justify-between px-3.5 py-2 mb-2 bg-indigo-50/90 dark:bg-indigo-950/50 border-l-4 border-indigo-500 rounded-r-xl shadow-xs text-xs animate-in fade-in slide-in-from-bottom-1 duration-150">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Reply className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="font-bold text-indigo-700 dark:text-indigo-300 text-[11px]">
+                Replying to {replyingToMessage.sender?.username ? `@${replyingToMessage.sender.username}` : 'User'}
+              </span>
+              <span className="text-slate-600 dark:text-slate-300 truncate text-xs">
+                {replyingToMessage.content}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={onCancelReply}
+            className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-full transition-colors"
+            title="Cancel reply"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
       {/* Hidden File Input */}
       <input
         type="file"
@@ -304,15 +340,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       {showEmojiPicker && (
         <div
           ref={emojiPickerRef}
-          className="absolute left-2 md:left-12 bottom-16 z-50 shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900"
+          className="absolute left-4 md:left-14 bottom-20 z-50 shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 animate-in fade-in slide-in-from-bottom-2 duration-150"
         >
           <EmojiPicker
             theme={Theme.AUTO}
             onEmojiClick={(emojiData) => insertEmoji(emojiData.emoji)}
             lazyLoadEmojis={true}
             searchPlaceHolder="Search all emojis..."
-            width={window.innerWidth < 480 ? 300 : 360}
-            height={420}
+            width={window.innerWidth < 480 ? 290 : 350}
+            height={400}
           />
         </div>
       )}

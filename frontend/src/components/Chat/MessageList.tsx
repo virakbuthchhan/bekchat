@@ -12,6 +12,7 @@ import {
   Copy,
   Check,
   SmilePlus,
+  Reply,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useUserSettings } from '../../context/UserSettingsContext';
@@ -40,6 +41,16 @@ interface Message {
   createdAt: string;
   editedAt?: string;
   isDeleted?: boolean;
+  parentId?: string;
+  parent?: {
+    id: string;
+    content: string;
+    sender?: {
+      id?: string;
+      username: string;
+      avatarUrl?: string;
+    };
+  };
   sender?: {
     id: string;
     username: string;
@@ -54,6 +65,7 @@ interface MessageListProps {
   messages: Message[];
   activeTypingUsernames: string[];
   onOpenThread: (message: Message) => void;
+  onReplyMessage?: (message: Message) => void;
   onToggleReaction: (messageId: string, emoji: string) => void;
   onEditMessage: (messageId: string, content: string) => void;
   onDeleteMessage: (messageId: string) => void;
@@ -68,6 +80,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   messages,
   activeTypingUsernames,
   onOpenThread,
+  onReplyMessage,
   onToggleReaction,
   onEditMessage,
   onDeleteMessage,
@@ -78,6 +91,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   const [editContent, setEditContent] = useState('');
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const [activeReactionPickerMessageId, setActiveReactionPickerMessageId] = useState<string | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const EMOJI_OPTIONS = ['👍', '❤️', '🚀', '🎉', '🔥', '👀', '💡'];
@@ -108,6 +122,15 @@ export const MessageList: React.FC<MessageListProps> = ({
     setTimeout(() => setCopiedCodeId(null), 2000);
   };
 
+  const scrollToMessage = (targetId: string) => {
+    const el = document.getElementById(`msg-${targetId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMessageId(targetId);
+      setTimeout(() => setHighlightedMessageId(null), 2000);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50 dark:bg-slate-950 font-sans">
       {messages.length === 0 ? (
@@ -117,10 +140,12 @@ export const MessageList: React.FC<MessageListProps> = ({
           <p className="text-xs text-slate-500">Be the first to start the conversation!</p>
         </div>
       ) : (
-        messages.map((msg) => {
+        messages.map((msg, idx) => {
           const isSender = msg.senderId === user?.id;
           const isBot = msg.sender?.username?.startsWith('bot_');
           const isEditing = editingId === msg.id;
+          const isPickerActive = activeReactionPickerMessageId === msg.id;
+          const popoverVerticalClass = idx < 2 ? 'top-full mt-2' : 'bottom-full mb-2';
 
           // Group reactions by emoji
           const reactionCounts: Record<string, { count: number; userIds: string[]; hasReacted: boolean }> = {};
@@ -137,10 +162,13 @@ export const MessageList: React.FC<MessageListProps> = ({
 
           return (
             <div
+              id={`msg-${msg.id}`}
               key={msg.id}
-              className={`group relative flex gap-3 items-start max-w-[85%] md:max-w-[78%] ${
-                isSender ? 'ml-auto flex-row-reverse' : 'mr-auto'
-              }`}
+              className={`group relative flex gap-3 items-start max-w-[85%] md:max-w-[78%] transition-all duration-300 rounded-2xl p-1 ${
+                isPickerActive ? 'z-40' : 'z-0'
+              } ${
+                highlightedMessageId === msg.id ? 'ring-2 ring-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20' : ''
+              } ${isSender ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
             >
               {/* Sender Avatar */}
               <img
@@ -179,6 +207,25 @@ export const MessageList: React.FC<MessageListProps> = ({
                       : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-tl-none'
                   }`}
                 >
+                  {/* Telegram Quoted Reply Card */}
+                  {msg.parent && (
+                    <div
+                      onClick={() => scrollToMessage(msg.parent!.id)}
+                      className={`mb-2 p-2 rounded-xl cursor-pointer border-l-4 text-xs select-none transition-all ${
+                        isSender
+                          ? 'bg-indigo-700/60 border-indigo-300 text-indigo-100 hover:bg-indigo-700'
+                          : 'bg-slate-100 dark:bg-slate-800/80 border-indigo-500 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="font-bold text-[11px] text-indigo-300 dark:text-indigo-400 mb-0.5 flex items-center gap-1">
+                        <Reply className="w-3 h-3 inline" />
+                        <span>{msg.parent.sender?.username || 'User'}</span>
+                      </div>
+                      <div className="truncate text-xs opacity-90 italic">
+                        {msg.parent.content}
+                      </div>
+                    </div>
+                  )}
                   {isEditing ? (
                     <div className="space-y-2 min-w-[220px]">
                       <textarea
@@ -306,19 +353,28 @@ export const MessageList: React.FC<MessageListProps> = ({
 
                   {/* Full Reaction Picker Popover */}
                   {activeReactionPickerMessageId === msg.id && (
-                    <div className="absolute z-50 shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden -top-80 right-0 bg-white dark:bg-slate-900">
-                      <EmojiPicker
-                        theme={Theme.AUTO}
-                        onEmojiClick={(emojiData) => {
-                          onToggleReaction(msg.id, emojiData.emoji);
-                          setActiveReactionPickerMessageId(null);
-                        }}
-                        lazyLoadEmojis={true}
-                        searchPlaceHolder="Search all reaction emojis..."
-                        width={300}
-                        height={320}
+                    <>
+                      {/* Transparent backdrop to dismiss reaction picker when clicking outside */}
+                      <div
+                        className="fixed inset-0 z-40 bg-black/5 dark:bg-black/20"
+                        onClick={() => setActiveReactionPickerMessageId(null)}
                       />
-                    </div>
+                      <div className={`absolute z-50 shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-150 ${
+                        isSender ? 'right-0' : 'left-0'
+                      } ${popoverVerticalClass}`}>
+                        <EmojiPicker
+                          theme={Theme.AUTO}
+                          onEmojiClick={(emojiData) => {
+                            onToggleReaction(msg.id, emojiData.emoji);
+                            setActiveReactionPickerMessageId(null);
+                          }}
+                          lazyLoadEmojis={true}
+                          searchPlaceHolder="Search all reaction emojis..."
+                          width={window.innerWidth < 480 ? 280 : 320}
+                          height={340}
+                        />
+                      </div>
+                    </>
                   )}
 
                   {/* Action Toolbar on Hover */}
@@ -344,6 +400,15 @@ export const MessageList: React.FC<MessageListProps> = ({
                       <SmilePlus className="w-3.5 h-3.5" />
                     </button>
                     <div className="w-px h-4 bg-slate-200 dark:bg-slate-800 my-auto mx-0.5" />
+                    {onReplyMessage && (
+                      <button
+                        onClick={() => onReplyMessage(msg)}
+                        title="Reply to specific message (Telegram style)"
+                        className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                      >
+                        <Reply className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     <button
                       onClick={() => onOpenThread(msg)}
                       title="Reply in thread"

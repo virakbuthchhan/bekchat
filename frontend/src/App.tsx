@@ -38,6 +38,7 @@ const MainChatApp: React.FC = () => {
 
   const [users, setUsers] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
+  const [replyingToMessage, setReplyingToMessage] = useState<any | null>(null);
 
   const [activeThreadMessage, setActiveThreadMessage] = useState<any | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -210,7 +211,7 @@ const MainChatApp: React.FC = () => {
         }
       }
 
-      if (newMsg.channelId === activeChannel.id && !newMsg.parentId) {
+      if (newMsg.channelId === activeChannel.id) {
         setMessages((prev) => {
           if (prev.some((m) => m.id === newMsg.id)) return prev;
           return [...prev, newMsg];
@@ -285,6 +286,7 @@ const MainChatApp: React.FC = () => {
 
     setActiveChannel(ch);
     setActiveThreadMessage(null);
+    setReplyingToMessage(null);
 
     if (ch.type === 'DIRECT_MESSAGE') {
       const otherMember = ch.members?.find((m: any) => m.userId !== user?.id);
@@ -318,18 +320,20 @@ const MainChatApp: React.FC = () => {
     } catch (e) {}
   };
 
-  const handleSendMessage = async (content: string, attachments?: any[]) => {
+  const handleSendMessage = async (content: string, attachments?: any[], parentId?: string) => {
     if (!activeChannel) return;
     try {
       const res = await axios.post('/api/messages', {
         channelId: activeChannel.id,
         content,
         attachments,
+        parentId,
       });
       setMessages((prev) => {
         if (prev.some((m) => m.id === res.data.id)) return prev;
         return [...prev, res.data];
       });
+      setReplyingToMessage(null);
     } catch (e) {}
   };
 
@@ -412,7 +416,7 @@ const MainChatApp: React.FC = () => {
   return (
     <div className="h-screen flex w-full overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       {/* Desktop Navigation Sidebar */}
-      <div className="hidden md:flex flex-shrink-0">
+      <div className="hidden md:flex flex-shrink-0 z-10">
         <WorkspaceBar
           workspaces={workspaces}
           activeWorkspaceId={activeWorkspaceId}
@@ -484,7 +488,7 @@ const MainChatApp: React.FC = () => {
       )}
 
       {/* Pane 2: Central Chat Area */}
-      <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 min-w-0">
+      <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 min-w-0 relative z-20">
         {activeChannel ? (
           <>
             <ChatHeader
@@ -505,6 +509,7 @@ const MainChatApp: React.FC = () => {
               messages={messages}
               activeTypingUsernames={activeTypingUsers[activeChannel.id] || []}
               onOpenThread={(msg) => setActiveThreadMessage(msg)}
+              onReplyMessage={(msg) => setReplyingToMessage(msg)}
               onToggleReaction={handleToggleReaction}
               onEditMessage={handleEditMessage}
               onDeleteMessage={handleDeleteMessage}
@@ -519,6 +524,8 @@ const MainChatApp: React.FC = () => {
               onSendMessage={handleSendMessage}
               onTyping={() => sendTypingStart(activeChannel.id)}
               onTypingStop={() => sendTypingStop(activeChannel.id)}
+              replyingToMessage={replyingToMessage}
+              onCancelReply={() => setReplyingToMessage(null)}
             />
           </>
         ) : (
