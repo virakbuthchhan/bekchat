@@ -11,6 +11,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { BotModule } from './modules/bot/bot.module';
 import { TranslationsModule } from './modules/translations/translations.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     BotModule,
     TranslationsModule,
     NotificationsModule,
+    UploadModule,
   ],
 })
 export class AppModule {}

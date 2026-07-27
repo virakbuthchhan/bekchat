@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as express from 'express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { RedisIoAdapter } from './modules/websockets/redis-io.adapter';
 
@@ -13,6 +15,13 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
+
+  // Increase payload limit for base64 / chunked file uploads
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+  // Serve static uploaded files (audio notes, images, videos, documents)
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   // Global Validation Pipe
   app.useGlobalPipes(

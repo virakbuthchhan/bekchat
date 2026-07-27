@@ -28,6 +28,7 @@ import {
   Pause,
   Trash,
   Image,
+  Loader2,
 } from 'lucide-react';
 
 interface MessageInputProps {
@@ -335,20 +336,92 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
-  const sendVoiceNote = () => {
-    if (!audioPreviewUrl) return;
-    const voiceAtt = {
-      fileName: `Voice_Note_${new Date().toISOString().substring(11, 19).replace(/:/g, '-')}.webm`,
-      fileUrl: audioPreviewUrl,
-      fileSize: audioBlob?.size || 0,
-      mimeType: 'audio/webm',
-    };
+  // Helper for single & chunked uploads
+  const uploadFileInChunks = async (
+    file: File | Blob,
+    fileName: string,
+    mimeType: string,
+    onProgress?: (percent: number) => void
+  ): Promise<any> => {
+    const CHUNK_SIZE = 1024 * 1024; // 1 MB chunks
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
-    onSendMessage('', [...attachments, voiceAtt], replyingToMessage?.id);
-    cancelVoiceRecording();
-    setAttachments([]);
-    if (onCancelReply) onCancelReply();
-    if (onTypingStop) onTypingStop();
+    if (totalChunks <= 1) {
+      const reader = new FileReader();
+      const base64Data = await new Promise<string>((resolve) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      const res = await axios.post('/api/upload/single', {
+        fileName,
+        mimeType,
+        data: base64Data,
+      });
+      if (onProgress) onProgress(100);
+      return res.data;
+    }
+
+    const initRes = await axios.post('/api/upload/init', {
+      fileName,
+      totalChunks,
+      mimeType,
+    });
+    const { uploadId } = initRes.data;
+
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * CHUNK_SIZE;
+      const end = Math.min(file.size, start + CHUNK_SIZE);
+      const chunkBlob = file.slice(start, end);
+
+      const reader = new FileReader();
+      const chunkBase64 = await new Promise<string>((resolve) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(chunkBlob);
+      });
+
+      await axios.post('/api/upload/chunk', {
+        uploadId,
+        chunkIndex: i,
+        totalChunks,
+        data: chunkBase64,
+      });
+
+      const progress = Math.round(((i + 1) / totalChunks) * 100);
+      if (onProgress) onProgress(progress);
+    }
+
+    const completeRes = await axios.post('/api/upload/complete', {
+      uploadId,
+      fileName,
+      mimeType,
+    });
+
+    return completeRes.data;
+  };
+
+  const sendVoiceNote = async () => {
+    if (!audioBlob) return;
+    const fileName = `Voice_Note_${new Date().toISOString().substring(11, 19).replace(/:/g, '-')}.webm`;
+    const mimeType = 'audio/webm';
+
+    try {
+      const uploaded = await uploadFileInChunks(audioBlob, fileName, mimeType);
+      const voiceAtt = {
+        fileName: uploaded.fileName,
+        fileUrl: uploaded.fileUrl,
+        fileSize: uploaded.fileSize,
+        mimeType: uploaded.mimeType,
+      };
+
+      onSendMessage('', [...attachments, voiceAtt], replyingToMessage?.id);
+      cancelVoiceRecording();
+      setAttachments([]);
+      if (onCancelReply) onCancelReply();
+      if (onTypingStop) onTypingStop();
+    } catch (err) {
+      alert('Failed to upload voice message. Please try again.');
+    }
   };
 
   const formatTimer = (sec: number) => {
@@ -357,26 +430,51 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // DataURL File Processor for images, videos, documents, zip, etc.
+  // DataURL & Chunked File Processor for images, videos, documents, zip, etc.
   const processFiles = (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        setAttachments((prev) => [
-          ...prev,
-          {
-            fileName: file.name,
-            fileUrl: dataUrl,
-            fileSize: file.size,
-            mimeType: file.type || 'application/octet-stream',
-          },
-        ]);
-      };
-      reader.readAsDataURL(file);
+      const tempId = `${Date.now()}_${i}_${Math.random().toString(36).substring(2, 6)}`;
+
+      setAttachments((prev) => [
+        ...prev,
+        {
+          tempId,
+          fileName: file.name,
+          fileUrl: '',
+          fileSize: file.size,
+          mimeType: file.type || 'application/octet-stream',
+          isUploading: true,
+          progress: 0,
+        },
+      ]);
+
+      uploadFileInChunks(file, file.name, file.type || 'application/octet-stream', (progress) => {
+        setAttachments((prev) =>
+          prev.map((att) => (att.tempId === tempId ? { ...att, progress } : att))
+        );
+      })
+        .then((uploaded) => {
+          setAttachments((prev) =>
+            prev.map((att) =>
+              att.tempId === tempId
+                ? {
+                    ...att,
+                    fileUrl: uploaded.fileUrl,
+                    fileSize: uploaded.fileSize,
+                    isUploading: false,
+                    progress: 100,
+                  }
+                : att
+            )
+          );
+        })
+        .catch(() => {
+          setAttachments((prev) => prev.filter((att) => att.tempId !== tempId));
+          alert(`Failed to upload file ${file.name}`);
+        });
     }
   };
 
@@ -579,10 +677,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
             return (
               <div
-                key={idx}
+                key={att.tempId || idx}
                 className="flex items-center gap-2 p-1.5 bg-slate-200 dark:bg-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 shadow-xs"
               >
-                {isImg ? (
+                {att.isUploading ? (
+                  <Loader2 className="w-4 h-4 text-indigo-500 animate-spin flex-shrink-0" />
+                ) : isImg ? (
                   <img src={att.fileUrl} alt={att.fileName} className="w-7 h-7 rounded object-cover" />
                 ) : isVid ? (
                   <Video className="w-4 h-4 text-indigo-500" />
@@ -593,8 +693,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 )}
                 <div className="flex flex-col truncate max-w-xs">
                   <span className="truncate font-medium">{att.fileName}</span>
-                  <span className="text-[10px] text-slate-500">
-                    {(att.fileSize / 1024).toFixed(1)} KB
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {att.isUploading
+                      ? `Uploading... ${att.progress || 0}%`
+                      : `${(att.fileSize / 1024).toFixed(1)} KB`}
                   </span>
                 </div>
                 <button
@@ -783,10 +885,14 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <div className="flex items-center">
             <button
               onClick={handleSend}
-              disabled={!content.trim() && attachments.length === 0}
+              disabled={(!content.trim() && attachments.length === 0) || attachments.some((a) => a.isUploading)}
               className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-lg text-xs font-semibold shadow flex items-center gap-1 transition-all disabled:opacity-30 disabled:pointer-events-none"
             >
-              <Send className="w-3.5 h-3.5" />
+              {attachments.some((a) => a.isUploading) ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Send className="w-3.5 h-3.5" />
+              )}
               <ChevronDown className="w-3 h-3 border-l border-emerald-400/40 ml-0.5 pl-0.5" />
             </button>
           </div>
