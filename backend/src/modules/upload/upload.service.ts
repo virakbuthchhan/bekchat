@@ -50,8 +50,10 @@ export class UploadService {
       throw new BadRequestException('Upload session directory not found');
     }
 
-    const ext = path.extname(fileName) || (mimeType.includes('webm') ? '.webm' : '');
-    const safeBaseName = path.basename(fileName, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeFileName = fileName || `file_${Date.now()}`;
+    const safeMimeType = mimeType || 'application/octet-stream';
+    const ext = path.extname(safeFileName) || (safeMimeType.includes('webm') ? '.webm' : '');
+    const safeBaseName = path.basename(safeFileName, ext).replace(/[^a-zA-Z0-9_-]/g, '_') || 'file';
     const uniqueFileName = `${safeBaseName}_${Date.now()}${ext}`;
     const finalPath = path.join(this.uploadDir, uniqueFileName);
 
@@ -75,15 +77,21 @@ export class UploadService {
 
     return {
       fileUrl: `/uploads/${uniqueFileName}`,
-      fileName,
+      fileName: safeFileName,
       fileSize: Math.round(stats.size),
-      mimeType,
+      mimeType: safeMimeType,
     };
   }
 
   async saveSingleFile(fileName: string, mimeType: string, base64Data: string) {
-    const ext = path.extname(fileName) || (mimeType.includes('webm') ? '.webm' : '');
-    const safeBaseName = path.basename(fileName, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+    if (!base64Data) {
+      throw new BadRequestException('No file data provided');
+    }
+
+    const safeFileName = fileName || `file_${Date.now()}`;
+    const safeMimeType = mimeType || 'application/octet-stream';
+    const ext = path.extname(safeFileName) || (safeMimeType.includes('webm') ? '.webm' : '');
+    const safeBaseName = path.basename(safeFileName, ext).replace(/[^a-zA-Z0-9_-]/g, '_') || 'file';
     const uniqueFileName = `${safeBaseName}_${Date.now()}${ext}`;
     const finalPath = path.join(this.uploadDir, uniqueFileName);
 
@@ -95,9 +103,9 @@ export class UploadService {
 
     return {
       fileUrl: `/uploads/${uniqueFileName}`,
-      fileName,
+      fileName: safeFileName,
       fileSize: Math.round(stats.size),
-      mimeType,
+      mimeType: safeMimeType,
     };
   }
 }
