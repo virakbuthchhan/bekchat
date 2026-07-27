@@ -25,10 +25,10 @@ export class CreateMessageDto {
   @IsNotEmpty()
   channelId: string;
 
-  @ApiProperty({ example: 'Hello team! Check this report out.' })
+  @ApiProperty({ example: 'Hello team! Check this report out.', required: false })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  content: string;
+  content?: string;
 
   @ApiProperty({ example: 'markdown', required: false })
   @IsOptional()

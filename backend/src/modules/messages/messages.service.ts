@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateMessageDto, UpdateMessageDto } from './dto/message.dto';
 import { ChatGateway } from '../websockets/chat.gateway';
@@ -37,11 +37,15 @@ export class MessagesService {
       }
     }
 
+    if (!dto.content?.trim() && (!dto.attachments || dto.attachments.length === 0)) {
+      throw new BadRequestException('Message must contain content or an attachment');
+    }
+
     const message = await this.prisma.message.create({
       data: {
         channelId: dto.channelId,
         senderId: userId,
-        content: dto.content,
+        content: dto.content || '',
         formatting: dto.formatting || 'markdown',
         parentId: dto.parentId,
         attachments: dto.attachments
