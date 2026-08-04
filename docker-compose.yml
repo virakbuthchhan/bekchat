@@ -7,8 +7,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-bek_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bek_password}
       POSTGRES_DB: ${POSTGRES_DB:-bek_chat}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,8 +19,6 @@ services:
     image: redis:7-alpine
     container_name: bek_chat_redis
     restart: always
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -43,8 +39,6 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-in-prod}
-    ports:
-      - "3000:3000"
     volumes:
       - uploads_data:/app/uploads
     depends_on:
