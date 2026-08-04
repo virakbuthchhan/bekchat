@@ -13,7 +13,7 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'Password123!' })
   @IsString()
-  @MinLength(6)
+  @MinLength(4)
   password: string;
 
   @ApiProperty({ example: 'https://example.com/avatar.png', required: false })

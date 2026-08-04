@@ -26,7 +26,7 @@ export class UpdateProfileDto {
   @ApiProperty({ example: 'newSecret456', required: false })
   @IsOptional()
   @IsString()
-  @MinLength(6)
+  @MinLength(4)
   newPassword?: string;
 }
 
