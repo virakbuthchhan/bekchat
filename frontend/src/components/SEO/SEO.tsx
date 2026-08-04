@@ -4,6 +4,7 @@ interface SEOProps {
   title?: string;
   description?: string;
   keywords?: string;
+  image?: string;
   canonical?: string;
 }
 
@@ -11,6 +12,7 @@ export const SEO: React.FC<SEOProps> = ({
   title,
   description = 'Bek-Chat is a fast, self-hosted, real-time team collaboration platform featuring instant channel messaging, direct messages, webhooks, and Telegram Bot API support.',
   keywords,
+  image = '/og-image.png',
   canonical,
 }) => {
   useEffect(() => {
@@ -29,10 +31,35 @@ export const SEO: React.FC<SEOProps> = ({
       document.head.appendChild(metaDescription);
     }
 
-    // Update Open Graph Title
+    // Update Open Graph Title & Description & Image
     let ogTitle = document.querySelector('meta[property="og:title"]');
     if (ogTitle) {
       ogTitle.setAttribute('content', title ? `${title} | Bek-Chat` : defaultTitle);
+    }
+
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) {
+      ogDesc.setAttribute('content', description);
+    }
+
+    let ogImage = document.querySelector('meta[property="og:image"]');
+    if (ogImage) {
+      ogImage.setAttribute('content', image);
+    }
+
+    let twitterTitle = document.querySelector('meta[name="twitter:title"]');
+    if (twitterTitle) {
+      twitterTitle.setAttribute('content', title ? `${title} | Bek-Chat` : defaultTitle);
+    }
+
+    let twitterDesc = document.querySelector('meta[name="twitter:description"]');
+    if (twitterDesc) {
+      twitterDesc.setAttribute('content', description);
+    }
+
+    let twitterImage = document.querySelector('meta[name="twitter:image"]');
+    if (twitterImage) {
+      twitterImage.setAttribute('content', image);
     }
 
     // Update Meta Keywords
@@ -50,7 +77,7 @@ export const SEO: React.FC<SEOProps> = ({
         linkCanonical.setAttribute('href', canonical);
       }
     }
-  }, [title, description, keywords, canonical]);
+  }, [title, description, keywords, image, canonical]);
 
   return null;
 };
