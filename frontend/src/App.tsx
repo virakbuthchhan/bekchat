@@ -14,6 +14,7 @@ import { ThreadPanel } from './components/Chat/ThreadPanel';
 import { SettingsModal } from './components/Settings/SettingsModal';
 import { SearchModal } from './components/Search/SearchModal';
 import { ProfileModal } from './components/Profile/ProfileModal';
+import { SEO } from './components/SEO/SEO';
 
 const MainChatApp: React.FC = () => {
   const { user, token } = useAuth();
@@ -425,6 +426,20 @@ const MainChatApp: React.FC = () => {
 
   return (
     <div className="h-screen flex w-full overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+      <SEO
+        title={
+          activeChannel
+            ? activeChannel.type === 'DIRECT_MESSAGE'
+              ? `@${activeChannel.name} - Direct Message`
+              : `#${activeChannel.name} - ${activeWorkspace?.name || 'Workspace'}`
+            : activeWorkspace?.name || 'Workspace'
+        }
+        description={
+          activeChannel?.topic
+            ? `${activeChannel.name}: ${activeChannel.topic}`
+            : `Real-time collaboration in ${activeWorkspace?.name || 'Bek-Chat workspace'}.`
+        }
+      />
       {/* Desktop Navigation Sidebar */}
       <div className="hidden md:flex flex-shrink-0 z-10">
         <WorkspaceBar

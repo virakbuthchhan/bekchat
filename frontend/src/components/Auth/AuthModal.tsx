@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { SEO } from '../SEO/SEO';
 
 interface AuthPageProps {
   mode: 'login' | 'register';
@@ -53,6 +54,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
   return (
     <div className="h-screen w-full flex bg-slate-950 text-slate-100 overflow-hidden font-sans select-none">
+      <SEO
+        title={mode === 'login' ? 'Sign In to Your Account' : 'Create an Account'}
+        description={
+          mode === 'login'
+            ? 'Sign in to Bek-Chat to access your workspaces, channels, and real-time team chats.'
+            : 'Join Bek-Chat today to start collaborating with real-time channels, direct messages & bot APIs.'
+        }
+      />
       {/* LEFT SIDE: Form Section */}
       <div className="w-full lg:w-1/2 flex flex-col justify-between p-8 md:p-12 lg:p-16 bg-slate-900/90 border-r border-slate-800/80 overflow-y-auto relative">
         {/* Background Subtle Mesh */}
